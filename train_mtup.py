@@ -527,31 +527,37 @@ def main():
 
     # Apply use case presets
     if args.use_case == 'quick_test':
-        # Quick test: 100 samples, 1 epoch
+        # Quick test: 100 samples, 1 epoch (verify pipeline)
         args.max_samples = args.max_samples or 100
         args.epochs = args.epochs or 1
         args.batch_size = args.batch_size or 2
+        args.grad_accum = args.grad_accum or 4
+        args.lr = args.lr or 2e-4
         args.log_steps = args.log_steps or 5
         args.save_steps = args.save_steps or 50
         args.show_sample = True
         logger.info("📋 Use case: Quick Test (100 samples, 1 epoch)")
 
     elif args.use_case == 'fast_iteration':
-        # Fast iteration: 500 samples, 2 epochs
+        # Fast iteration: 500 samples, 3 epochs (tune hyperparams)
         args.max_samples = args.max_samples or 500
-        args.epochs = args.epochs or 2
-        args.batch_size = args.batch_size or 4
-        args.log_steps = args.log_steps or 10
-        args.save_steps = args.save_steps or 100
-        logger.info("📋 Use case: Fast Iteration (500 samples, 2 epochs)")
-
-    elif args.use_case == 'full_training':
-        # Full training: all data, 3 epochs
         args.epochs = args.epochs or 3
         args.batch_size = args.batch_size or 4
+        args.grad_accum = args.grad_accum or 4
+        args.lr = args.lr or 2e-4
+        args.log_steps = args.log_steps or 10
+        args.save_steps = args.save_steps or 100
+        logger.info("📋 Use case: Fast Iteration (500 samples, 3 epochs)")
+
+    elif args.use_case == 'full_training':
+        # Full training: all data, 10 epochs (OPTIMIZED for MTUP)
+        args.epochs = args.epochs or 10
+        args.batch_size = args.batch_size or 4
+        args.grad_accum = args.grad_accum or 4
+        args.lr = args.lr or 2e-4
         args.log_steps = args.log_steps or 20
         args.save_steps = args.save_steps or 200
-        logger.info("📋 Use case: Full Training (all data, 3 epochs)")
+        logger.info("📋 Use case: Full Training (all data, 10 epochs - OPTIMIZED)")
 
     # Print banner
     print_banner()

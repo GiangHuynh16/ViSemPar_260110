@@ -62,8 +62,8 @@ LORA_CONFIG = {
 # ==============================================================================
 
 TRAINING_CONFIG = {
-    "learning_rate": 3e-4,              # Slightly higher for smaller models
-    "num_train_epochs": 15,              # Fewer epochs (MTUP learns faster)
+    "learning_rate": 2e-4,              # OPTIMIZED: Lower for stable training
+    "num_train_epochs": 10,              # OPTIMIZED: MTUP converges faster, 10 epochs sufficient
     "per_device_train_batch_size": 4,    # Larger batch for smaller models
     "gradient_accumulation_steps": 4,    # Effective batch size: 16
     "warmup_steps": 100,                 # More warmup for stability
@@ -100,7 +100,7 @@ DATA_CONFIG = {
     "public_test_file": "public_test.txt",
     "public_test_ground_truth": "public_test_ground_truth.txt",
     "private_test_file": "private_test.txt",
-    "validation_split": 0.05,        # 5% for validation
+    "validation_split": 0.1,         # OPTIMIZED: 10% for better validation monitoring
     "max_samples": None,              # None = use all data
 }
 

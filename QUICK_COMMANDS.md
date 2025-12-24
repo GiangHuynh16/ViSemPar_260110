@@ -99,16 +99,16 @@ ls -lh data/
 
 ---
 
-## 🚀 **TRAINING (MTUP)**
+## 🚀 **TRAINING (MTUP) - OPTIMIZED**
 
 ```bash
 # Quick test (100 samples, 1 epoch - verify pipeline)
 python3 train_mtup.py --use-case quick_test --show-sample
 
-# Fast iteration (500 samples, 2 epochs - tune hyperparams)
+# Fast iteration (500 samples, 3 epochs - tune hyperparams)
 python3 train_mtup.py --use-case fast_iteration
 
-# Full training (all data, 3 epochs - production)
+# Full training (all data, 10 epochs - OPTIMIZED) ⭐ RECOMMENDED
 tmux new -s amr-training
 python3 train_mtup.py --use-case full_training
 # Ctrl+B, D (detach)
@@ -116,13 +116,22 @@ python3 train_mtup.py --use-case full_training
 # Reattach tmux
 tmux attach -t amr-training
 
-# Custom training
+# Custom optimized training
 python3 train_mtup.py \
   --model qwen2.5-3b \
-  --max-samples 1000 \
-  --epochs 3 \
+  --epochs 10 \
   --batch-size 4 \
-  --lr 2e-4
+  --grad-accum 4 \
+  --lr 2e-4 \
+  --val-split 0.1
+
+# Best accuracy (7B model, slower)
+python3 train_mtup.py \
+  --model qwen2.5-7b \
+  --epochs 15 \
+  --batch-size 2 \
+  --grad-accum 8 \
+  --lr 1e-4
 ```
 
 ---
