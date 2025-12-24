@@ -345,13 +345,27 @@ def setup_model_and_tokenizer(args):
 
     # Load model
     logger.info("\nLoading model...")
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        quantization_config=quantization_config,
-        device_map="auto" if torch.cuda.is_available() else None,
-        trust_remote_code=True,
-        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
-    )
+
+    # For non-quantized mode, use CPU offloading to reduce GPU memory
+    if not use_quantization and torch.cuda.is_available():
+        logger.info("⚠️  Loading model with CPU offload to reduce GPU memory usage")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            quantization_config=quantization_config,
+            device_map="auto",
+            max_memory={0: "20GB", "cpu": "30GB"},  # Reserve 3.5GB GPU memory for activations/gradients
+            offload_folder="offload",
+            trust_remote_code=True,
+            torch_dtype=torch.float16
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            quantization_config=quantization_config,
+            device_map="auto" if torch.cuda.is_available() else None,
+            trust_remote_code=True,
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+        )
 
     logger.info(f"✓ Model loaded")
 
