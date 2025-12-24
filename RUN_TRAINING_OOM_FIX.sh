@@ -13,6 +13,19 @@ echo ""
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lora_py310
 
+# CRITICAL: Uninstall bitsandbytes to avoid import errors
+echo "🗑️  Checking bitsandbytes..."
+python3 -c "import bitsandbytes" 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo "⚠️  bitsandbytes found, uninstalling..."
+    pip uninstall -y bitsandbytes 2>/dev/null || true
+    conda uninstall -y bitsandbytes 2>/dev/null || true
+    echo "✓ bitsandbytes removed"
+else
+    echo "✓ bitsandbytes not installed (good)"
+fi
+echo ""
+
 # Set memory optimization flags (use new PYTORCH_ALLOC_CONF)
 export PYTORCH_ALLOC_CONF=expandable_segments:True,max_split_size_mb:128
 export CUDA_LAUNCH_BLOCKING=0

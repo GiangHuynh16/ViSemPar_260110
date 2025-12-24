@@ -14,6 +14,20 @@ Process has 23.41 GiB in use. PyTorch allocated 21.93 GiB.
 
 ---
 
+## ✅ GIẢI PHÁP 0: UNINSTALL BITSANDBYTES (BẮT BUỘC)
+
+**QUAN TRỌNG**: PEFT cố import bitsandbytes ngay cả khi dùng `--no-quantize`. Phải uninstall trước:
+
+```bash
+cd ~/ViSemPar_new1
+git pull origin main
+bash UNINSTALL_BITSANDBYTES.sh
+```
+
+Sau đó mới chạy training.
+
+---
+
 ## ✅ GIẢI PHÁP 1: CHẠY VỚI PYTORCH MEMORY OPTIMIZATION (Nhanh nhất)
 
 **Trên server, chạy script này:**
@@ -25,9 +39,10 @@ bash RUN_TRAINING_OOM_FIX.sh
 ```
 
 Script này sẽ:
-- Set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` để giảm fragmentation
+- Tự động uninstall bitsandbytes nếu tìm thấy
+- Set `PYTORCH_ALLOC_CONF=expandable_segments:True` để giảm fragmentation
 - Clear GPU cache trước khi train
-- Chạy với batch_size=1, grad_accum=4, max_samples=50
+- Chạy với batch_size=1, grad_accum=2, max_samples=50
 
 ---
 
