@@ -564,6 +564,7 @@ def main():
         args.lr = args.lr or 2e-4
         args.log_steps = args.log_steps or 5
         args.save_steps = args.save_steps or 50
+        args.eval_steps = args.eval_steps or 50  # Match save_steps
         args.show_sample = True
         logger.info("📋 Use case: Quick Test (100 samples, 1 epoch)")
 
@@ -576,6 +577,7 @@ def main():
         args.lr = args.lr or 2e-4
         args.log_steps = args.log_steps or 10
         args.save_steps = args.save_steps or 100
+        args.eval_steps = args.eval_steps or 100  # Match save_steps
         logger.info("📋 Use case: Fast Iteration (500 samples, 3 epochs)")
 
     elif args.use_case == 'full_training':
@@ -586,6 +588,7 @@ def main():
         args.lr = args.lr or 2e-4
         args.log_steps = args.log_steps or 20
         args.save_steps = args.save_steps or 200
+        args.eval_steps = args.eval_steps or 200  # Match save_steps
         logger.info("📋 Use case: Full Training (all data, 10 epochs - OPTIMIZED)")
 
     # Print banner
