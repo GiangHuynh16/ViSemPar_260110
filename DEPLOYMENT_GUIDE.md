@@ -9,12 +9,13 @@
 1. [Local Preparation](#step-1-local-preparation)
 2. [Git Push](#step-2-git-push)
 3. [Server Setup](#step-3-server-setup)
-4. [HuggingFace Login](#step-4-huggingface-login-critical)
-5. [Data Verification](#step-5-data-verification)
-6. [Training](#step-6-training-with-mtup)
-7. [Monitoring](#step-7-monitoring-training)
-8. [Evaluation](#step-8-evaluation)
-9. [Troubleshooting](#troubleshooting)
+4. [**NumPy Fix (CRITICAL)**](#step-4-numpy-compatibility-fix-critical)
+5. [HuggingFace Login](#step-5-huggingface-login-critical)
+6. [Data Verification](#step-6-data-verification)
+7. [Training](#step-7-training-with-mtup)
+8. [Monitoring](#step-8-monitoring-training)
+9. [Evaluation](#step-9-evaluation)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -96,39 +97,64 @@ cd ViSemPar_new1
 git pull origin main
 ```
 
+---
+
+## 🔧 **STEP 4: NUMPY COMPATIBILITY FIX (CRITICAL)**
+
+### **4.1. The Problem**
+
+The server has **NumPy 2.3.5**, which breaks compatibility with pandas/scikit-learn compiled with NumPy 1.x.
+
+**Error you'll see:**
+```
+AttributeError: _ARRAY_API not found
+ValueError: numpy.dtype size changed, may indicate binary incompatibility
+```
+
+### **4.2. Quick Fix (Recommended)**
+
+Run the automated fix script:
+
+```bash
+cd ~/ViSemPar_new1
+bash fix_numpy_server.sh
+```
+
 **Verify:**
 ```bash
-git log --oneline -3
-# Should match your local commits
+python3 -c "import numpy; print(f'NumPy {numpy.__version__}')"
+# Should show: NumPy 1.26.x (or similar 1.x version)
+
+python3 -c "import pandas; print('pandas OK')"
+python3 -c "import sklearn; print('sklearn OK')"
 ```
 
----
+### **4.3. Manual Fix (Alternative)**
 
-### **3.3. Run Setup Script**
+If the script doesn't work:
 
 ```bash
-bash setup_server.sh
+# Downgrade NumPy
+pip install "numpy<2.0.0" --upgrade
+
+# Reinstall dependencies
+pip install --force-reinstall pandas scikit-learn
+
+# Verify
+python3 -c "import numpy, pandas, sklearn; print('All OK')"
 ```
 
-**Setup script will:**
-1. ✅ Check Python 3.8+
-2. ✅ Create directories (data, outputs, logs, checkpoints)
-3. ✅ Install dependencies from requirements.txt
-4. ✅ Ask about HuggingFace setup
+### **4.4. Why This Happens**
 
-**When asked about HuggingFace:**
-```
-Choose an option:
-  1. CLI Login (RECOMMENDED - one-time setup)
-  2. Environment Variable (.env file)
-  3. Skip for now
+- NumPy 2.x (released 2024) changed internal C API
+- Dependencies compiled with NumPy 1.x are **not compatible**
+- Solution: Use NumPy 1.x (pinned in requirements.txt)
 
-→ Choose 1: CLI Login
-```
+See [NUMPY_FIX_GUIDE.md](NUMPY_FIX_GUIDE.md) for details.
 
 ---
 
-## 🔑 **STEP 4: HUGGINGFACE LOGIN (CRITICAL)**
+## 🔑 **STEP 5: HUGGINGFACE LOGIN (CRITICAL)**
 
 **Why needed?**
 - ✅ Download pretrained models (Qwen, Gemma, Phi)
@@ -199,7 +225,7 @@ source ~/.bashrc
 cd ~/ViSemPar_new1
 
 # Create .env file
-echo 'HF_TOKEN=hf_xxxxxxxxxxxxx' > .env
+echo 'HF_TOKEN=your_token_here' > .env
 
 # Verify
 cat .env
@@ -370,7 +396,7 @@ F1:        1.0000
 
 ---
 
-## 🚀 **STEP 6: TRAINING WITH MTUP**
+## 🚀 **STEP 7: TRAINING WITH MTUP**
 
 ### **6.1. Quick Test (ALWAYS RUN FIRST)**
 
