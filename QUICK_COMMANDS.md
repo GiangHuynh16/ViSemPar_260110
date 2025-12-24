@@ -99,19 +99,30 @@ ls -lh data/
 
 ---
 
-## 🚀 **TRAINING (Future)**
+## 🚀 **TRAINING (MTUP)**
 
 ```bash
-# Quick test (when train_mtup.py available)
-python3 train_mtup.py --use-case quick_test
+# Quick test (100 samples, 1 epoch - verify pipeline)
+python3 train_mtup.py --use-case quick_test --show-sample
 
-# Fast iteration
-tmux new -s amr-training
+# Fast iteration (500 samples, 2 epochs - tune hyperparams)
 python3 train_mtup.py --use-case fast_iteration
+
+# Full training (all data, 3 epochs - production)
+tmux new -s amr-training
+python3 train_mtup.py --use-case full_training
 # Ctrl+B, D (detach)
 
-# Reattach
+# Reattach tmux
 tmux attach -t amr-training
+
+# Custom training
+python3 train_mtup.py \
+  --model qwen2.5-3b \
+  --max-samples 1000 \
+  --epochs 3 \
+  --batch-size 4 \
+  --lr 2e-4
 ```
 
 ---
@@ -123,7 +134,10 @@ tmux attach -t amr-training
 nvidia-smi
 
 # Logs
-tail -f logs/training_mtup.log
+tail -f outputs/logs/mtup_*/training.log
+
+# TensorBoard
+tensorboard --logdir outputs/logs
 
 # Disk space
 df -h
