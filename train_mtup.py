@@ -411,9 +411,9 @@ def train_mtup_model(model, tokenizer, train_dataset, val_dataset, args):
         weight_decay=TRAINING_CONFIG.get('weight_decay', 0.01),
         warmup_steps=TRAINING_CONFIG.get('warmup_steps', 100),
         logging_steps=args.log_steps or TRAINING_CONFIG.get('logging_steps', 10),
-        save_steps=args.save_steps or TRAINING_CONFIG.get('save_steps', 100),
-        eval_steps=args.eval_steps or TRAINING_CONFIG.get('eval_steps', 100) if val_dataset else None,
-        evaluation_strategy="steps" if val_dataset else "no",
+        save_steps=args.save_steps or TRAINING_CONFIG.get('save_steps', 250),
+        eval_steps=args.eval_steps or TRAINING_CONFIG.get('save_steps', 250) if val_dataset else None,  # Match save_steps
+        eval_strategy="steps" if val_dataset else "no",  # Use eval_strategy instead of evaluation_strategy
         save_strategy="steps",
         save_total_limit=3,
         load_best_model_at_end=True if val_dataset else False,
