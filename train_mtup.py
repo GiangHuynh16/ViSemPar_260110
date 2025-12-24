@@ -419,7 +419,7 @@ def train_mtup_model(model, tokenizer, train_dataset, val_dataset, args):
         load_best_model_at_end=True if val_dataset else False,
         fp16=torch.cuda.is_available(),
         gradient_checkpointing=True,
-        optim="paged_adamw_8bit" if torch.cuda.is_available() else "adamw_torch",
+        optim="adamw_torch",  # Use standard AdamW (no bitsandbytes required)
         report_to=["tensorboard"],
         logging_dir=str(OUTPUT_DIR / "logs" / f"mtup_{timestamp}"),
     )
