@@ -309,7 +309,13 @@ def setup_model_and_tokenizer(args):
 
     model_name = MODELS[model_key]
     logger.info(f"Model: {model_name}")
-    logger.info(f"Using 4-bit quantization: {USE_4BIT_QUANTIZATION}")
+
+    # Override quantization if --no-quantize flag is set
+    use_quantization = USE_4BIT_QUANTIZATION and not args.no_quantize
+    if args.no_quantize:
+        logger.warning("⚠️  Quantization DISABLED by --no-quantize flag")
+        logger.warning("   Training will use more GPU memory")
+    logger.info(f"Using 4-bit quantization: {use_quantization}")
 
     # Load tokenizer
     logger.info("\nLoading tokenizer...")
@@ -328,7 +334,7 @@ def setup_model_and_tokenizer(args):
 
     # Setup quantization config if using 4-bit
     quantization_config = None
-    if USE_4BIT_QUANTIZATION and torch.cuda.is_available():
+    if use_quantization and torch.cuda.is_available():
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_compute_dtype=torch.float16,
@@ -350,7 +356,7 @@ def setup_model_and_tokenizer(args):
     logger.info(f"✓ Model loaded")
 
     # Prepare for k-bit training if quantized
-    if USE_4BIT_QUANTIZATION and torch.cuda.is_available():
+    if use_quantization and torch.cuda.is_available():
         model = prepare_model_for_kbit_training(model)
         logger.info("✓ Model prepared for k-bit training")
 
@@ -523,6 +529,8 @@ def main():
                         help='Model to use (default: qwen2.5-3b for MTUP efficiency)')
     parser.add_argument('--max-length', type=int, default=2048,
                         help='Maximum sequence length (MTUP needs longer sequences)')
+    parser.add_argument('--no-quantize', action='store_true',
+                        help='Disable 4-bit quantization (use if bitsandbytes not working)')
 
     # Training arguments
     parser.add_argument('--epochs', type=int, default=None,
