@@ -74,9 +74,7 @@ Output:"""
         outputs = model.generate(
             **inputs,
             max_length=max_length,
-            temperature=0.1,  # Lower temperature for more deterministic output
-            do_sample=True,
-            top_p=0.95,
+            do_sample=False,  # Greedy decoding - completely deterministic
             num_beams=1,
             pad_token_id=tokenizer.eos_token_id
         )
@@ -102,9 +100,8 @@ Output:"""
         outputs = model.generate(
             **inputs,
             max_length=max_length + 100,
-            temperature=0.7,
-            do_sample=True,
-            top_p=0.9,
+            do_sample=False,  # Greedy decoding - completely deterministic
+            num_beams=1,
             pad_token_id=tokenizer.eos_token_id
         )
 
@@ -117,8 +114,8 @@ Output:"""
     else:
         final_amr = result_task2.strip()
 
-    # FIX: Add missing parentheses and balance structure
-    final_amr = fix_incomplete_amr(final_amr)
+    # DISABLED: Post-processing was making it worse
+    # final_amr = fix_incomplete_amr(final_amr)
 
     return final_amr
 
