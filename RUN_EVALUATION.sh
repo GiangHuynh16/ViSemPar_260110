@@ -14,14 +14,24 @@ source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lora_py310
 
 # Find latest checkpoint
-echo "Finding latest checkpoint..."
-latest_checkpoint=$(ls -d outputs/checkpoints_mtup/checkpoint-* 2>/dev/null | sort -V | tail -1)
+echo "Finding checkpoints..."
+
+# Try different checkpoint patterns
+latest_checkpoint=$(ls -dt outputs/checkpoints_mtup/checkpoint-* 2>/dev/null | head -1)
+
+if [ -z "$latest_checkpoint" ]; then
+    # Try MTUP final checkpoints
+    latest_checkpoint=$(ls -dt outputs/checkpoints_mtup/mtup_*_final 2>/dev/null | head -1)
+fi
 
 if [ -z "$latest_checkpoint" ]; then
     echo "❌ No checkpoints found in outputs/checkpoints_mtup/"
     echo ""
-    echo "Available checkpoints:"
+    echo "Available directories:"
     ls -lh outputs/checkpoints_mtup/ 2>/dev/null || echo "  (none)"
+    echo ""
+    echo "Please specify checkpoint manually:"
+    echo "  python3 evaluate_mtup_model.py --checkpoint outputs/checkpoints_mtup/YOUR_CHECKPOINT"
     exit 1
 fi
 
