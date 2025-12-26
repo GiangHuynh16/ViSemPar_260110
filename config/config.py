@@ -17,7 +17,9 @@ CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
 # Run: mkdir -p data outputs logs outputs/checkpoints
 
 # Model Configuration - BASELINE (Unified with MTUP for fair comparison)
-MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
+# NOTE: Using 3B instead of 7B due to GPU memory constraints (no quantization)
+# 7B requires bitsandbytes for quantization which is not available
+MODEL_NAME = "Qwen/Qwen2.5-3B-Instruct"
 MAX_SEQ_LENGTH = 2048  # Sufficient for complex AMR structures
 
 # LoRA Configuration - Optimized for Vietnamese AMR
@@ -37,14 +39,14 @@ LORA_CONFIG = {
 # Training Configuration - Optimized for convergence
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,
-    "num_train_epochs": 20,              # Increased for better convergence
-    "per_device_train_batch_size": 2,
-    "gradient_accumulation_steps": 8,    # Effective batch size: 16
-    "warmup_steps": 50,                  # Gradual warmup
+    "num_train_epochs": 10,              # Same as MTUP for fair comparison
+    "per_device_train_batch_size": 4,    # 3B model can handle larger batch
+    "gradient_accumulation_steps": 4,    # Effective batch size: 16
+    "warmup_steps": 100,                 # Same as MTUP
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
     "logging_steps": 10,
-    "save_steps": 500,
+    "save_steps": 250,                   # Same as MTUP
     "save_total_limit": 3,
     "fp16": True,
     "optim": "adamw_8bit",
