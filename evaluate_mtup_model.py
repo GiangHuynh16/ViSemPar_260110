@@ -159,8 +159,8 @@ def generate_mtup_prediction(model, tokenizer, sentence: str, max_length=512):
         first_paren = final_amr.index('(')
         final_amr = final_amr[first_paren:].strip()
 
-    # POST-PROCESSING: Apply conservative repair pipeline (minimal changes)
-    final_amr = post_process_amr_conservative(final_amr)
+    # NO POST-PROCESSING: End-to-end LLM learning
+    # Let the model learn to generate correct AMR directly
 
     return final_amr
 

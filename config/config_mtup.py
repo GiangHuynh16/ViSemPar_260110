@@ -38,8 +38,8 @@ MODELS = {
 }
 
 # Default model for MTUP training
-# RECOMMENDED: Start with qwen2.5-3b for fastest iteration
-MODEL_NAME = MODELS['qwen2.5-3b']
+# UNIFIED: Use same 7B model as baseline for fair comparison
+MODEL_NAME = MODELS['qwen2.5-7b']
 MAX_SEQ_LENGTH = 2048  # Sufficient for MTUP format with 2 tasks
 
 # ==============================================================================

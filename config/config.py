@@ -16,8 +16,8 @@ CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
 # NOTE: Directories must be created manually before training
 # Run: mkdir -p data outputs logs outputs/checkpoints
 
-# Model Configuration - IMPROVED for better performance
-MODEL_NAME = "Qwen/Qwen2.5-14B-Instruct"
+# Model Configuration - BASELINE (Unified with MTUP for fair comparison)
+MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
 MAX_SEQ_LENGTH = 2048  # Sufficient for complex AMR structures
 
 # LoRA Configuration - Optimized for Vietnamese AMR

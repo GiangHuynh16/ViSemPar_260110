@@ -31,21 +31,23 @@ AMR(có_biến):
 # TEMPLATE 2: Natural Vietnamese (Tự nhiên)
 # Best for: Better model understanding, conversational style
 # ==============================================================================
-MTUP_TEMPLATE_V2_NATURAL = """### NHIỆM VỤ: Chuyển đổi câu tiếng Việt sang AMR (2 bước)
+MTUP_TEMPLATE_V2_NATURAL = """### NHIỆM VỤ
+Chuyển đổi câu tiếng Việt sang AMR (2 bước)
 
-### Câu cần phân tích:
+### CÂU ĐẦU VÀO
 {sentence}
 
-### Kết quả phân tích:
+### KẾT QUẢ
 
-## Bước 1 - Tạo cấu trúc AMR (chưa có biến):
+## BƯỚC 1: Cấu trúc AMR (chưa có biến)
 {amr_no_vars}
 
-## Bước 2 - Gán biến cho các khái niệm:
-Hướng dẫn:
-• Mỗi khái niệm được gán một biến riêng (ví dụ: n, n2, p, c...)
-• Khái niệm xuất hiện nhiều lần → dùng chung một biến (đồng tham chiếu)
-• Format: (biến / khái_niệm :quan_hệ...)
+## BƯỚC 2: Gán biến
+
+Quy tắc gán biến:
+- Mỗi khái niệm → một biến (ví dụ: n, p, c)
+- Khái niệm lặp lại → dùng chung biến (đồng tham chiếu)
+- Format: (biến / khái_niệm :quan_hệ ...)
 
 AMR hoàn chỉnh:
 {amr_with_vars}"""
