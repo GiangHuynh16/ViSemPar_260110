@@ -59,15 +59,12 @@ def load_model(checkpoint_path: str):
     print("✓ Model loaded successfully")
     return model, tokenizer
 
-def post_process_amr(amr_string: str) -> str:
+def post_process_amr_conservative(amr_string: str) -> str:
     """
-    POST-PROCESSING PIPELINE
-    Repair common errors in model-generated AMR based on literature review
+    CONSERVATIVE POST-PROCESSING
+    Only fix obviously broken things, don't change semantics
 
-    Based on:
-    - ViAMR (VLSP 2025): String-level repair steps
-    - IBM AMR Parser: Parenthesis balancing
-    - Common AMR issues: Duplicate variables, malformed structure
+    Version 2: Minimal changes to avoid breaking correct AMRs
     """
     import re
 
@@ -76,83 +73,36 @@ def post_process_amr(amr_string: str) -> str:
 
     amr = amr_string.strip()
 
-    # Step 1: Remove prompt leakage (common issue)
-    # Remove text like "2 bước", "Hướng dẫn:", etc.
-    prompt_artifacts = [
-        r'\d+\s*bước',
-        r'Hướng dẫn:',
-        r'AMR hoàn chỉnh:',
-        r'### NHIỆM VỤ',
-        r'## Bước \d+',
-    ]
-    for pattern in prompt_artifacts:
-        amr = re.sub(pattern, '', amr, flags=re.IGNORECASE)
+    # ONLY SAFE FIXES:
 
-    # Step 2: Extract valid AMR structure (must start with '(')
-    if '(' not in amr:
-        return "(error / no-valid-structure)"
+    # 1. Remove obvious prompt leakage (but be careful!)
+    # Only remove if it's clearly NOT part of AMR content
+    if '(' in amr:
+        # Find first '(' - everything before is likely prompt leak
+        first_paren = amr.index('(')
+        before_paren = amr[:first_paren]
 
-    first_paren = amr.index('(')
-    amr = amr[first_paren:]
+        # Only remove if it contains prompt markers
+        if any(marker in before_paren for marker in ['bước', 'Hướng dẫn', 'NHIỆM VỤ']):
+            amr = amr[first_paren:]
 
-    # Step 3: Balance parentheses using stack-based approach
-    # This is a common post-processing step in AMR parsers
-    stack = []
-    balanced = []
+    # 2. ONLY add missing closing parens (DON'T remove extra ones!)
+    #    Removing might break correct nested structures
+    open_count = amr.count('(')
+    close_count = amr.count(')')
 
-    for char in amr:
-        if char == '(':
-            stack.append(char)
-            balanced.append(char)
-        elif char == ')':
-            if stack:
-                stack.pop()
-                balanced.append(char)
-            # else: skip extra closing paren
-        else:
-            balanced.append(char)
+    if open_count > close_count:
+        # Missing closing parens - safe to add
+        amr = amr + ')' * (open_count - close_count)
+    # DON'T touch if close_count >= open_count (might be correct!)
 
-    # Add missing closing parens
-    while stack:
-        balanced.append(')')
-        stack.pop()
-
-    amr = ''.join(balanced)
-
-    # Step 4: Rename duplicate variables
-    # Handle "Reentrancy" errors - common in AMR parsing
-    seen_vars = {}
-
-    def rename_duplicate_var(match):
-        var_name = match.group(1)
-        concept = match.group(2)
-
-        if var_name in seen_vars:
-            # Duplicate found! Rename with counter
-            counter = seen_vars[var_name]
-            seen_vars[var_name] += 1
-            new_var = f"{var_name}{counter}"
-            return f"({new_var} / {concept}"
-        else:
-            # First occurrence - track it
-            seen_vars[var_name] = 2  # Next duplicate will be var2
-            return match.group(0)
-
-    # Pattern: (variable / concept)
-    var_pattern = r'\(([a-z][a-z0-9]*)\s*/\s*([^\s\)]+)'
-    amr = re.sub(var_pattern, rename_duplicate_var, amr)
-
-    # Step 5: Basic validation
-    # Ensure starts with '(' and ends with ')'
-    if not amr.startswith('('):
-        amr = '(' + amr
-    if not amr.endswith(')'):
-        amr = amr + ')'
-
-    # Step 6: Clean up excessive whitespace
+    # 3. Clean up whitespace (safe operation)
     amr = re.sub(r'\s+', ' ', amr)
     amr = re.sub(r'\(\s+', '(', amr)
     amr = re.sub(r'\s+\)', ')', amr)
+
+    # SKIP variable renaming - too risky!
+    # SKIP removing extra parens - might break correct AMRs!
 
     return amr.strip()
 
@@ -209,8 +159,8 @@ def generate_mtup_prediction(model, tokenizer, sentence: str, max_length=512):
         first_paren = final_amr.index('(')
         final_amr = final_amr[first_paren:].strip()
 
-    # POST-PROCESSING: Apply repair pipeline
-    final_amr = post_process_amr(final_amr)
+    # POST-PROCESSING: Apply conservative repair pipeline (minimal changes)
+    final_amr = post_process_amr_conservative(final_amr)
 
     return final_amr
 
