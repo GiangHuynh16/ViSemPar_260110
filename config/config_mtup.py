@@ -48,7 +48,7 @@ MAX_SEQ_LENGTH = 2048  # Sufficient for MTUP format with 2 tasks
 
 # Use 4-bit quantization for memory efficiency
 # Set to False if you have enough VRAM and want faster training
-USE_4BIT_QUANTIZATION = False  # Disabled for 7B model with 24GB VRAM
+USE_4BIT_QUANTIZATION = True  # Enabled to avoid OOM with 7B model
 
 # ==============================================================================
 # LORA CONFIGURATION - OPTIMIZED FOR SMALLER MODELS
@@ -72,8 +72,8 @@ LORA_CONFIG = {
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,              # OPTIMIZED: Lower for stable training
     "num_train_epochs": 10,              # OPTIMIZED: MTUP converges faster, 10 epochs sufficient
-    "per_device_train_batch_size": 4,    # Larger batch for smaller models
-    "gradient_accumulation_steps": 4,    # Effective batch size: 16
+    "per_device_train_batch_size": 2,    # Reduced to avoid OOM with 7B model
+    "gradient_accumulation_steps": 8,    # Increased to maintain effective batch size: 16
     "warmup_steps": 100,                 # More warmup for stability
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
