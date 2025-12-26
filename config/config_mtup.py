@@ -38,8 +38,9 @@ MODELS = {
 }
 
 # Default model for MTUP training
-# UNIFIED: Use same 7B model as baseline for fair comparison
-MODEL_NAME = MODELS['qwen2.5-7b']
+# NOTE: Using 3B instead of 7B due to GPU memory constraints (no quantization)
+# 7B requires bitsandbytes for quantization which is not available
+MODEL_NAME = MODELS['qwen2.5-3b']
 MAX_SEQ_LENGTH = 2048  # Sufficient for MTUP format with 2 tasks
 
 # ==============================================================================
@@ -73,8 +74,8 @@ LORA_CONFIG = {
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,              # OPTIMIZED: Lower for stable training
     "num_train_epochs": 10,              # OPTIMIZED: MTUP converges faster, 10 epochs sufficient
-    "per_device_train_batch_size": 1,    # Minimal batch size to avoid OOM (no quantization)
-    "gradient_accumulation_steps": 16,   # Increased to maintain effective batch size: 16
+    "per_device_train_batch_size": 4,    # 3B model can handle larger batch
+    "gradient_accumulation_steps": 4,    # Effective batch size: 16
     "warmup_steps": 100,                 # More warmup for stability
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
