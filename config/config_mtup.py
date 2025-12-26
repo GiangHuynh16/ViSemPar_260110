@@ -43,6 +43,14 @@ MODEL_NAME = MODELS['qwen2.5-7b']
 MAX_SEQ_LENGTH = 2048  # Sufficient for MTUP format with 2 tasks
 
 # ==============================================================================
+# QUANTIZATION CONFIGURATION
+# ==============================================================================
+
+# Use 4-bit quantization for memory efficiency
+# Set to False if you have enough VRAM and want faster training
+USE_4BIT_QUANTIZATION = False  # Disabled for 7B model with 24GB VRAM
+
+# ==============================================================================
 # LORA CONFIGURATION - OPTIMIZED FOR SMALLER MODELS
 # ==============================================================================
 
