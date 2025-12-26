@@ -369,6 +369,10 @@ def setup_model_and_tokenizer(args):
 
     logger.info(f"✓ Model loaded")
 
+    # Enable gradient checkpointing to reduce memory usage
+    model.gradient_checkpointing_enable()
+    logger.info("✓ Gradient checkpointing enabled (reduces memory usage)")
+
     # Prepare for k-bit training if quantized
     if use_quantization and torch.cuda.is_available():
         model = prepare_model_for_kbit_training(model)
