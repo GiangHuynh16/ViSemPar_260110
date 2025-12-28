@@ -31,14 +31,16 @@ def find_latest_model(model_type="mtup"):
     if not outputs_dir.exists():
         return None
 
-    # Search patterns
+    # Search patterns - check both old and new locations
     if model_type == "mtup":
-        pattern = "mtup_*"
+        patterns = ["checkpoints_mtup/*_final", "mtup_*"]
     else:
-        pattern = "baseline_*"
+        patterns = ["checkpoints/*", "baseline_*"]
 
     # Find all matching directories
-    candidates = list(outputs_dir.glob(pattern))
+    candidates = []
+    for pattern in patterns:
+        candidates.extend(outputs_dir.glob(pattern))
 
     if not candidates:
         return None
@@ -48,14 +50,16 @@ def find_latest_model(model_type="mtup"):
 
     # Check each candidate for required files
     for candidate in candidates:
-        # Check if adapter_model.bin exists directly
-        if (candidate / "adapter_model.bin").exists():
+        # Check if adapter_model.safetensors or adapter_model.bin exists
+        if (candidate / "adapter_model.safetensors").exists() or (candidate / "adapter_model.bin").exists():
             return candidate
 
         # Check subdirectories (e.g., final/, checkpoint-XXX/)
-        for subdir in sorted(candidate.iterdir(), reverse=True):
-            if subdir.is_dir() and (subdir / "adapter_model.bin").exists():
-                return subdir
+        if candidate.is_dir():
+            for subdir in sorted(candidate.iterdir(), reverse=True):
+                if subdir.is_dir():
+                    if (subdir / "adapter_model.safetensors").exists() or (subdir / "adapter_model.bin").exists():
+                        return subdir
 
     return None
 
@@ -106,13 +110,15 @@ def push_to_hf(model_type="mtup", model_path=None):
         print(f"❌ ERROR: Model path does not exist: {model_path}")
         return False
 
-    # Check required files
-    required_files = ["adapter_model.bin", "adapter_config.json"]
-    missing_files = []
+    # Check required files (either .bin or .safetensors)
+    has_model = (model_path / "adapter_model.bin").exists() or (model_path / "adapter_model.safetensors").exists()
+    has_config = (model_path / "adapter_config.json").exists()
 
-    for file in required_files:
-        if not (model_path / file).exists():
-            missing_files.append(file)
+    missing_files = []
+    if not has_model:
+        missing_files.append("adapter_model.bin or adapter_model.safetensors")
+    if not has_config:
+        missing_files.append("adapter_config.json")
 
     if missing_files:
         print(f"❌ ERROR: Missing required files in {model_path}:")
