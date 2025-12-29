@@ -1,0 +1,366 @@
+<mxfile host="app.diagrams.net" modified="2025-12-29T00:00:00.000Z" agent="5.0" version="24.0.0" type="device">
+  <diagram name="Vietnamese AMR Parser - System Architecture" id="system-arch">
+    <mxGraphModel dx="1434" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Vietnamese AMR Parser - System Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="500" y="20" width="600" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="subtitle" value="Research Demo System (VLSP 2025 AMR Parsing)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="500" y="60" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- CLIENT LAYER -->
+        <!-- ============================================ -->
+        <mxCell id="client-layer-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1F5FE;strokeColor=#01579B;strokeWidth=2;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="1440" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="client-layer-title" value="CLIENT LAYER" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#01579B" vertex="1" parent="1">
+          <mxGeometry x="100" y="130" width="150" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- User -->
+        <mxCell id="user" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#0277BD;strokeColor=#01579B;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="180" y="180" width="40" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="user-label" value="User" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="160" y="260" width="80" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend React App -->
+        <mxCell id="frontend" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1976D2;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="350" y="150" width="1100" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="frontend-title" value="FRONTEND (React.js)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#1976D2" vertex="1" parent="1">
+          <mxGeometry x="370" y="160" width="200" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Use Case 1: AMR Tree Visualization -->
+        <mxCell id="usecase1" value="Use Case 1&lt;br&gt;&lt;b&gt;AMR Tree&lt;br&gt;Visualization&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Input sentence&lt;br&gt;- D3.js tree view&lt;br&gt;- Role table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90CAF9;strokeColor=#1565C0;align=center;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="380" y="195" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Use Case 2: Book Search -->
+        <mxCell id="usecase2" value="Use Case 2&lt;br&gt;&lt;b&gt;Book Search&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Query input&lt;br&gt;- Embedding search&lt;br&gt;- AMR enhancement" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90CAF9;strokeColor=#1565C0;align=center;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="195" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Use Case 3: Sentence Analysis -->
+        <mxCell id="usecase3" value="Use Case 3&lt;br&gt;&lt;b&gt;Sentence Analysis&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Paraphrase detect&lt;br&gt;- Fact comparison&lt;br&gt;- Role extraction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90CAF9;strokeColor=#1565C0;align=center;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="740" y="195" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Model Comparison -->
+        <mxCell id="model-comparison" value="Model Comparison&lt;br&gt;&lt;br&gt;Compare 3 models:&lt;br&gt;- MTUP&lt;br&gt;- Baseline&lt;br&gt;- BARTpho" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE082;strokeColor=#F57F17;align=center;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="920" y="195" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Visualization Components -->
+        <mxCell id="viz-components" value="Visualization&lt;br&gt;&lt;br&gt;- D3.js (Tree)&lt;br&gt;- Chart.js (Compare)&lt;br&gt;- TailwindCSS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C5E1A5;strokeColor=#558B2F;align=center;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="195" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- State Management -->
+        <mxCell id="state-mgmt" value="State Management&lt;br&gt;&lt;br&gt;- React Context&lt;br&gt;- Hooks&lt;br&gt;- API Cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C5E1A5;strokeColor=#558B2F;align=center;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="195" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- User to Frontend arrow -->
+        <mxCell id="user-to-frontend" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#0288D1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="user" target="frontend">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="240" y="220" as="sourcePoint" />
+            <mxPoint x="350" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="user-to-frontend-label" value="HTTP/HTTPS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#0288D1" vertex="1" parent="1">
+          <mxGeometry x="250" y="200" width="80" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- API LAYER -->
+        <!-- ============================================ -->
+        <mxCell id="api-layer-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;strokeWidth=2;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="340" width="1440" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api-layer-title" value="API LAYER (Backend)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#6A1B9A" vertex="1" parent="1">
+          <mxGeometry x="100" y="350" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Backend Node.js -->
+        <mxCell id="backend" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#7B1FA2;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="150" y="385" width="1320" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="backend-title" value="BACKEND API (Node.js + Express)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1;fontColor=#6A1B9A" vertex="1" parent="1">
+          <mxGeometry x="170" y="395" width="280" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- API Endpoints -->
+        <mxCell id="api-endpoints" value="&lt;b&gt;REST API Endpoints&lt;/b&gt;&lt;br&gt;&lt;br&gt;POST /api/parse&lt;br&gt;POST /api/search/books&lt;br&gt;POST /api/compare&lt;br&gt;GET /api/models/list" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CE93D8;strokeColor=#6A1B9A;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="180" y="430" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- AMR Service -->
+        <mxCell id="amr-service" value="&lt;b&gt;AMR Service&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Model selection&lt;br&gt;- HF API calls&lt;br&gt;- Response parsing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CE93D8;strokeColor=#6A1B9A;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="410" y="430" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Search Service -->
+        <mxCell id="search-service" value="&lt;b&gt;Search Service&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Embedding gen&lt;br&gt;- Vector search&lt;br&gt;- AMR matching" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CE93D8;strokeColor=#6A1B9A;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="620" y="430" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Comparison Service -->
+        <mxCell id="compare-service" value="&lt;b&gt;Comparison Service&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Multi-model call&lt;br&gt;- Metrics calc&lt;br&gt;- Result ranking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CE93D8;strokeColor=#6A1B9A;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="830" y="430" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Cache Layer -->
+        <mxCell id="cache-service" value="&lt;b&gt;Cache Layer&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Redis/Memory&lt;br&gt;- Response cache&lt;br&gt;- Rate limiting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="430" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Utils -->
+        <mxCell id="utils" value="&lt;b&gt;Utilities&lt;/b&gt;&lt;br&gt;&lt;br&gt;- AMR parser&lt;br&gt;- Similarity calc&lt;br&gt;- Error handling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="430" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend to Backend arrow -->
+        <mxCell id="frontend-to-backend" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#7B1FA2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="frontend" target="backend">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="800" y="280" as="sourcePoint" />
+            <mxPoint x="800" y="385" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="frontend-to-backend-label" value="REST API&lt;br&gt;JSON" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#7B1FA2;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="820" y="295" width="80" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- AI MODELS LAYER -->
+        <!-- ============================================ -->
+        <mxCell id="models-layer-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="560" width="750" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="models-layer-title" value="AI MODELS LAYER" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#E65100" vertex="1" parent="1">
+          <mxGeometry x="100" y="570" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- HuggingFace Container -->
+        <mxCell id="hf-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#EF6C00;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="150" y="605" width="650" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hf-title" value="HuggingFace Inference API (via Ngrok)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#E65100" vertex="1" parent="1">
+          <mxGeometry x="170" y="615" width="300" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Model 1: MTUP -->
+        <mxCell id="model-mtup" value="&lt;b&gt;MTUP&lt;/b&gt;&lt;br&gt;(Qwen 2.5 3B)&lt;br&gt;&lt;br&gt;✓ Two-task&lt;br&gt;✓ Deployed&lt;br&gt;F1: ~0.50" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#81C784;strokeColor=#2E7D32;align=center;fontSize=10;fontStyle=1;fontColor=#1B5E20" vertex="1" parent="1">
+          <mxGeometry x="180" y="650" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Model 2: Baseline -->
+        <mxCell id="model-baseline" value="&lt;b&gt;Baseline&lt;/b&gt;&lt;br&gt;(Qwen 2.5 3B)&lt;br&gt;&lt;br&gt;✓ Single-task&lt;br&gt;✓ Deployed&lt;br&gt;F1: ~0.45" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#81C784;strokeColor=#2E7D32;align=center;fontSize=10;fontStyle=1;fontColor=#1B5E20" vertex="1" parent="1">
+          <mxGeometry x="345" y="650" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Model 3: BARTpho -->
+        <mxCell id="model-bartpho" value="&lt;b&gt;BARTpho&lt;/b&gt;&lt;br&gt;(Word-level)&lt;br&gt;&lt;br&gt;✓ Low-resource&lt;br&gt;✓ Deployed&lt;br&gt;F1: TBD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#81C784;strokeColor=#2E7D32;align=center;fontSize=10;fontStyle=1;fontColor=#1B5E20" vertex="1" parent="1">
+          <mxGeometry x="510" y="650" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Other Models (Not Exposed) -->
+        <mxCell id="other-models" value="&lt;b&gt;Other Models&lt;/b&gt;&lt;br&gt;(Research Only)&lt;br&gt;&lt;br&gt;- BARTpho (syl)&lt;br&gt;- ViT5&lt;br&gt;✗ Not in API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0E0;strokeColor=#757575;align=center;fontSize=10;fontColor=#424242;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="675" y="650" width="110" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Backend to Models arrow -->
+        <mxCell id="backend-to-models" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#EF6C00;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="backend" target="hf-container">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="510" as="sourcePoint" />
+            <mxPoint x="475" y="605" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="backend-to-models-label" value="HTTP POST&lt;br&gt;Ngrok tunnel" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#EF6C00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="370" y="525" width="90" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- DATABASE LAYER -->
+        <!-- ============================================ -->
+        <mxCell id="db-layer-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;strokeWidth=2;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="880" y="560" width="640" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db-layer-title" value="DATABASE LAYER" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#2E7D32" vertex="1" parent="1">
+          <mxGeometry x="900" y="570" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- MongoDB Atlas -->
+        <mxCell id="mongodb" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#388E3C;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="920" y="605" width="570" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mongodb-title" value="MongoDB Atlas (Cloud)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#2E7D32" vertex="1" parent="1">
+          <mxGeometry x="940" y="615" width="200" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Books Collection -->
+        <mxCell id="books-collection" value="&lt;b&gt;books&lt;/b&gt; Collection&lt;br&gt;&lt;br&gt;Fields:&lt;br&gt;- title, author&lt;br&gt;- description&lt;br&gt;- embedding [384]&lt;br&gt;- amr (string)&lt;br&gt;- semanticContent&lt;br&gt;- tags, genre&lt;br&gt;&lt;br&gt;Index: embedding&lt;br&gt;~100 documents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A5D6A7;strokeColor=#2E7D32;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="950" y="650" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Vector Search -->
+        <mxCell id="vector-search" value="&lt;b&gt;Vector Search&lt;/b&gt;&lt;br&gt;&lt;br&gt;MongoDB Atlas&lt;br&gt;Search Index&lt;br&gt;&lt;br&gt;Cosine similarity&lt;br&gt;on embedding field" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE082;strokeColor=#F57F17;align=center;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1200" y="650" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Future Collections (dashed) -->
+        <mxCell id="future-collections" value="&lt;b&gt;Future&lt;/b&gt;&lt;br&gt;&lt;br&gt;- cache&lt;br&gt;- analytics&lt;br&gt;- queries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E0E0;strokeColor=#757575;align=center;fontSize=10;fontColor=#424242;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="1365" y="650" width="105" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Backend to Database arrow -->
+        <mxCell id="backend-to-db" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#388E3C;exitX=0.85;exitY=1;exitDx=0;exitDy=0;entryX=0.35;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="backend" target="mongodb">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1050" y="510" as="sourcePoint" />
+            <mxPoint x="1120" y="605" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="backend-to-db-label" value="MongoDB Driver&lt;br&gt;Mongoose ODM" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#388E3C;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1040" y="525" width="110" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- DEPLOYMENT INFO -->
+        <!-- ============================================ -->
+        <mxCell id="deployment-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;strokeWidth=2;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="800" width="1440" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="deployment-title" value="DEPLOYMENT STATUS" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#F57F17" vertex="1" parent="1">
+          <mxGeometry x="100" y="810" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend Deployment -->
+        <mxCell id="deploy-frontend" value="&lt;b&gt;Frontend&lt;/b&gt;&lt;br&gt;&lt;br&gt;Status: ⏳ Not deployed&lt;br&gt;Planned: Vercel&lt;br&gt;Tech: React 18" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF59D;strokeColor=#F9A825;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="850" width="200" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Backend Deployment -->
+        <mxCell id="deploy-backend" value="&lt;b&gt;Backend API&lt;/b&gt;&lt;br&gt;&lt;br&gt;Status: ⏳ Not deployed&lt;br&gt;Planned: Railway/Render&lt;br&gt;Tech: Node.js 18+" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF59D;strokeColor=#F9A825;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="345" y="850" width="210" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Database Deployment -->
+        <mxCell id="deploy-db" value="&lt;b&gt;Database&lt;/b&gt;&lt;br&gt;&lt;br&gt;Status: ✅ Active&lt;br&gt;Platform: MongoDB Atlas&lt;br&gt;Tier: Free (M0)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#388E3C;align=left;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="580" y="850" width="200" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Models Deployment -->
+        <mxCell id="deploy-models" value="&lt;b&gt;AI Models&lt;/b&gt;&lt;br&gt;&lt;br&gt;Status: ✅ MTUP trained&lt;br&gt;⏳ Baseline training&lt;br&gt;Access: Ngrok tunnel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#EF6C00;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="805" y="850" width="200" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Ngrok Info -->
+        <mxCell id="deploy-ngrok" value="&lt;b&gt;Ngrok Tunnel&lt;/b&gt;&lt;br&gt;&lt;br&gt;Purpose: Expose local&lt;br&gt;GPU server to internet&lt;br&gt;Type: HTTP tunnel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#EF6C00;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="850" width="185" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Domain Info -->
+        <mxCell id="deploy-domain" value="&lt;b&gt;Domain&lt;/b&gt;&lt;br&gt;&lt;br&gt;Frontend: TBD&lt;br&gt;Backend: TBD&lt;br&gt;SSL: Let's Encrypt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF59D;strokeColor=#F9A825;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="850" width="185" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- DATA FLOW ANNOTATIONS -->
+        <!-- ============================================ -->
+
+        <!-- Data Flow 1: AMR Parsing -->
+        <mxCell id="flow1-label" value="① AMR Parsing Flow" style="text;html=1;strokeColor=#0288D1;fillColor=#E1F5FE;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="950" width="150" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow1-desc" value="User input → Frontend → Backend API → HF Model (MTUP/Baseline/BARTpho) → AMR output → Visualization" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="975" width="650" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Data Flow 2: Book Search -->
+        <mxCell id="flow2-label" value="② Book Search Flow" style="text;html=1;strokeColor=#388E3C;fillColor=#E8F5E9;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="1010" width="150" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow2-desc" value="Query → Embedding generation → MongoDB vector search → Results + AMR enrichment → Display" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1035" width="650" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Data Flow 3: Model Comparison -->
+        <mxCell id="flow3-label" value="③ Model Comparison Flow" style="text;html=1;strokeColor=#E65100;fillColor=#FFF3E0;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="1070" width="180" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow3-desc" value="Same input → Parallel calls to 3 models → Collect AMR outputs → Calculate metrics (F1, precision) → Compare &amp; rank" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1095" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- TECH STACK LEGEND -->
+        <!-- ============================================ -->
+        <mxCell id="tech-stack-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#9E9E9E;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="850" y="950" width="670" height="175" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tech-stack-title" value="TECHNOLOGY STACK" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#424242" vertex="1" parent="1">
+          <mxGeometry x="870" y="960" width="200" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend Tech -->
+        <mxCell id="tech-frontend" value="&lt;b&gt;Frontend&lt;/b&gt;&lt;br&gt;- React 18&lt;br&gt;- D3.js v7&lt;br&gt;- TailwindCSS&lt;br&gt;- Axios&lt;br&gt;- Chart.js" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1976D2;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="870" y="995" width="130" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- Backend Tech -->
+        <mxCell id="tech-backend" value="&lt;b&gt;Backend&lt;/b&gt;&lt;br&gt;- Node.js 18+&lt;br&gt;- Express.js&lt;br&gt;- Mongoose&lt;br&gt;- Axios&lt;br&gt;- CORS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#7B1FA2;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="995" width="130" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- Database Tech -->
+        <mxCell id="tech-database" value="&lt;b&gt;Database&lt;/b&gt;&lt;br&gt;- MongoDB 7.0&lt;br&gt;- Atlas Search&lt;br&gt;- Vector index&lt;br&gt;- Cosine sim" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#388E3C;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="995" width="130" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- AI/ML Tech -->
+        <mxCell id="tech-ai" value="&lt;b&gt;AI/ML&lt;/b&gt;&lt;br&gt;- Qwen 2.5 3B&lt;br&gt;- BARTpho&lt;br&gt;- HuggingFace&lt;br&gt;- Ngrok&lt;br&gt;- PEFT/LoRA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#EF6C00;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="995" width="130" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- NOTES -->
+        <!-- ============================================ -->
+        <mxCell id="notes-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#546E7A;strokeWidth=1;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="1150" width="1440" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="notes" value="📌 Notes: (1) All 3 models hosted on HuggingFace, accessed via Ngrok tunnel from local GPU server. (2) MongoDB Atlas free tier (M0). (3) Frontend/Backend not yet deployed - local development only. (4) Research focus: Core AMR parsing, Demo is supplementary." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#37474F;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="95" y="1155" width="1410" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

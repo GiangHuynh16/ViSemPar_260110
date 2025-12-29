@@ -1,0 +1,352 @@
+<mxfile host="app.diagrams.net" modified="2025-12-29T00:00:00.000Z" agent="5.0" version="24.0.0" type="device">
+  <diagram name="Vietnamese AMR System Architecture" id="clean-arch">
+    <mxGraphModel dx="1400" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Vietnamese AMR Parser - System Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="500" y="20" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- USER -->
+        <!-- ============================================ -->
+        <mxCell id="user" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="80" y="300" width="40" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="user-label" value="User" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="385" width="80" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- FRONTEND -->
+        <!-- ============================================ -->
+        <mxCell id="frontend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="200" y="250" width="280" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="frontend-title" value="React SPA (Client)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="210" y="260" width="260" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- React Icon -->
+        <mxCell id="react-icon" value="⚛️" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=40;" vertex="1" parent="1">
+          <mxGeometry x="230" y="300" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="react-label" value="React 18" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="360" width="80" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- D3 Icon -->
+        <mxCell id="d3-icon" value="📊" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=40;" vertex="1" parent="1">
+          <mxGeometry x="310" y="300" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d3-label" value="D3.js" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="310" y="360" width="60" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- Tailwind Icon -->
+        <mxCell id="tailwind-icon" value="🎨" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=40;" vertex="1" parent="1">
+          <mxGeometry x="390" y="300" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tailwind-label" value="Tailwind" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="380" y="360" width="80" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- Use Cases -->
+        <mxCell id="usecases" value="3 Use Cases:&#xa;Tree Viz | Book Search | Analysis" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="210" y="390" width="260" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- User to Frontend -->
+        <mxCell id="user-fe-arrow" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;" edge="1" parent="1" source="user" target="frontend-bg">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="130" y="340" as="sourcePoint" />
+            <mxPoint x="200" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="user-fe-label" value="HTTPS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="140" y="320" width="50" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- BACKEND API -->
+        <!-- ============================================ -->
+        <mxCell id="backend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="550" y="100" width="280" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="backend-title" value="Backend API (Node.js)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="560" y="110" width="260" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Node Icon -->
+        <mxCell id="node-icon" value="🟢" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=35;" vertex="1" parent="1">
+          <mxGeometry x="580" y="145" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node-label" value="Node.js" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="570" y="195" width="70" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- Express Icon -->
+        <mxCell id="express-icon" value="⚡" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=35;" vertex="1" parent="1">
+          <mxGeometry x="665" y="145" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="express-label" value="Express" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="655" y="195" width="70" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- API Icon -->
+        <mxCell id="api-icon" value="🔌" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=35;" vertex="1" parent="1">
+          <mxGeometry x="750" y="145" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api-label" value="REST API" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="740" y="195" width="70" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- API Endpoints -->
+        <mxCell id="endpoints" value="/parse | /search | /compare" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="560" y="230" width="260" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Services -->
+        <mxCell id="services" value="Services: AMR | Search | Compare | Cache" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="560" y="250" width="260" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend to Backend -->
+        <mxCell id="fe-be-arrow" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" edge="1" parent="1" source="frontend-bg" target="backend-bg">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480" y="295" as="sourcePoint" />
+            <mxPoint x="550" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="fe-be-label" value="REST&#xa;JSON" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="205" width="50" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- CORE: AMR MODELS (DETAILED) -->
+        <!-- ============================================ -->
+        <mxCell id="amr-core-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="550" y="340" width="950" height="540" as="geometry" />
+        </mxCell>
+
+        <mxCell id="amr-core-title" value="CORE: AMR PROCESSING PIPELINE" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="560" y="350" width="930" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ========== GPU SERVER ========== -->
+        <mxCell id="gpu-server" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="580" y="400" width="890" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gpu-title" value="Local GPU Server (Quadro RTX 6000, 24GB)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="590" y="410" width="870" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Model 1: MTUP -->
+        <mxCell id="model1-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="610" y="445" width="250" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="model1-title" value="MODEL 1: MTUP" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="620" y="450" width="230" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="model1-info" value="Base: Qwen2.5-3B (3.09B params)&#xa;LoRA: r=64, α=128 (~67M trainable)&#xa;Strategy: Two-Task (MTUP)&#xa;Status: ✅ Trained | F1: ~0.50&#xa;Exposed: ✅ API" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="625" y="475" width="220" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Model 2: Baseline -->
+        <mxCell id="model2-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="880" y="445" width="250" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="model2-title" value="MODEL 2: BASELINE" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="890" y="450" width="230" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="model2-info" value="Base: Qwen2.5-3B (3.09B params)&#xa;LoRA: r=128, α=256 (~134M trainable)&#xa;Strategy: Single-Task (Direct)&#xa;Status: ⏳ Need training | F1: ~0.45 (est)&#xa;Exposed: ✅ API" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="895" y="475" width="220" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Model 3: BARTpho -->
+        <mxCell id="model3-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="445" width="250" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="model3-title" value="MODEL 3: BARTpho" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1160" y="450" width="230" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="model3-info" value="Base: vinai/bartpho-word (135M)&#xa;Fine-tuning: Full (no LoRA)&#xa;Strategy: Seq2seq&#xa;Status: ✅ Trained | Low-resource&#xa;Exposed: ✅ API" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1165" y="475" width="220" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ========== MTUP ARCHITECTURE DETAIL ========== -->
+        <mxCell id="mtup-detail-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="580" y="580" width="430" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mtup-detail-title" value="MTUP Two-Task Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="590" y="590" width="410" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Input -->
+        <mxCell id="mtup-input" value="Input Sentence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3D3D3;strokeColor=#000000;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="625" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Task 1 -->
+        <mxCell id="mtup-task1" value="Task 1: AMR Structure&#xa;(no variables)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#000000;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="680" width="180" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow 1 -->
+        <mxCell id="mtup-arrow1" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="mtup-input" target="mtup-task1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="790" y="660" as="sourcePoint" />
+            <mxPoint x="790" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow1-label" value="Prompt 1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="805" y="660" width="50" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- Task 2 -->
+        <mxCell id="mtup-task2" value="Task 2: Variable Binding&#xa;(complete AMR)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#000000;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="745" width="180" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow 2 -->
+        <mxCell id="mtup-arrow2" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="mtup-task1" target="mtup-task2">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="790" y="720" as="sourcePoint" />
+            <mxPoint x="790" y="745" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow2-label" value="Prompt 2" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="805" y="725" width="50" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- Output -->
+        <mxCell id="mtup-output" value="Final AMR&#xa;(with variables)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D3D3D3;strokeColor=#000000;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="810" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow 3 -->
+        <mxCell id="mtup-arrow3" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="mtup-task2" target="mtup-output">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="790" y="785" as="sourcePoint" />
+            <mxPoint x="790" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow3-label" value="Generate" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="805" y="790" width="50" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- Explanation -->
+        <mxCell id="mtup-explain" value="✓ Explicit supervision at each step&#xa;✓ Easier learning (decomposition)&#xa;✓ Better structure quality&#xa;✓ Reduces errors (guided process)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="605" y="755" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ========== RESEARCH COMPARISON ========== -->
+        <mxCell id="research-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="1040" y="580" width="430" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="research-title" value="Research: Model Comparison" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1050" y="590" width="410" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Comparison Table -->
+        <mxCell id="comparison-table" value="&lt;b&gt;Model Comparison Metrics:&lt;/b&gt;&#xa;&#xa;MTUP vs Baseline:&#xa;  • Two-task decomposition vs direct&#xa;  • Impact of explicit supervision&#xa;&#xa;Large vs Small:&#xa;  • 3B (Qwen) vs 135M (BARTpho)&#xa;  • Parameter efficiency&#xa;&#xa;LoRA vs Full Fine-tuning:&#xa;  • Memory efficiency&#xa;  • Training speed&#xa;&#xa;Low-resource Vietnamese:&#xa;  • BARTpho, ViT5 (research only)&#xa;  • Domain adaptation" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="625" width="390" height="155" as="geometry" />
+        </mxCell>
+
+        <!-- Expected Results -->
+        <mxCell id="results-box" value="&lt;b&gt;Expected F1 (SMATCH):&lt;/b&gt;&#xa;MTUP: ~0.50 ⭐&#xa;Baseline: ~0.45&#xa;BARTpho: ~0.43" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#000000;strokeWidth=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="795" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Hidden Models -->
+        <mxCell id="hidden-models" value="&lt;b&gt;Research Only (hidden):&lt;/b&gt;&#xa;• BARTpho-syllable&#xa;• ViT5&#xa;(Not exposed in API)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#000000;strokeWidth=1;dashed=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="795" width="190" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Backend to AMR -->
+        <mxCell id="be-amr-arrow" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.15;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="backend-bg" target="amr-core-bg">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="760" y="290" as="sourcePoint" />
+            <mxPoint x="690" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="be-amr-label" value="Ngrok&#xa;Tunnel" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="680" y="295" width="50" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- DATABASE (Simple) -->
+        <!-- ============================================ -->
+        <mxCell id="db-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="200" y="500" width="280" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db-title" value="MongoDB Atlas (Cloud)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="210" y="510" width="260" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- MongoDB Icon -->
+        <mxCell id="mongo-icon" value="🍃" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=50;" vertex="1" parent="1">
+          <mxGeometry x="240" y="545" width="80" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- DB Info -->
+        <mxCell id="db-info" value="Collection: books&#xa;&#xa;Fields:&#xa;• title, author, description&#xa;• embedding[384]&#xa;• amr (string)&#xa;&#xa;Vector Search: Cosine sim" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="330" y="545" width="130" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- Backend to DB -->
+        <mxCell id="be-db-arrow" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="backend-bg" target="db-bg">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="620" y="290" as="sourcePoint" />
+            <mxPoint x="410" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="be-db-label" value="Book&#xa;Search" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="450" y="365" width="50" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- DEPLOYMENT INFO (Bottom) -->
+        <!-- ============================================ -->
+        <mxCell id="deploy-box" value="🌐 Deployment: Frontend (Vercel) | Backend (Railway) | DB (MongoDB Atlas M0) | Models (HuggingFace + Ngrok)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#000000;strokeWidth=1;align=center;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="920" width="1300" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Tech Stack -->
+        <mxCell id="tech-box" value="Tech: React 18 | Node.js | Express | MongoDB | Qwen2.5-3B | BARTpho | D3.js | TailwindCSS | LoRA (PEFT)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#000000;strokeWidth=1;align=center;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="960" width="1300" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -45,11 +45,9 @@ Chuyển đổi câu tiếng Việt sang biểu diễn AMR
 ## BƯỚC 2: AMR hoàn chỉnh với biến
 
 Quy tắc gán biến:
-- Mỗi khái niệm → một biến duy nhất
-- Khái niệm lặp lại → dùng chung biến
-- Format: (biến / khái_niệm :quan_hệ ...)
+- Mỗi khái niệm được gán một biến duy nhất
+- Khái niệm lặp lại sử dụng chung biến đã gán
 
-AMR cuối cùng:
 {amr_with_vars}"""
 
 
@@ -121,7 +119,6 @@ Quy tắc gán biến:
 - Duyệt qua từng khái niệm trong AMR ở Bước 1
 - Khái niệm lần đầu xuất hiện: gán biến mới (chữ cái đầu)
 - Khái niệm đã gặp: sử dụng lại biến (đồng tham chiếu)
-- Format cuối: (biến / khái_niệm :quan_hệ ...)
 
 <AMR_WITH_VARIABLES>
 {amr_with_vars}

@@ -1,0 +1,245 @@
+{
+  "metadata": {
+    "description": "Demo examples for Vietnamese AMR web application",
+    "source": "VLSP 2025 AMR public test data",
+    "use_cases": ["event_extraction", "fact_comparison", "paraphrase_detection"]
+  },
+
+  "use_case_1_event_extraction": {
+    "description": "Tìm kiếm sự kiện theo vai trò ngữ nghĩa (ai làm gì, ở đâu)",
+    "examples": [
+      {
+        "query": "Tìm bài viết về chủ tịch xã nói/nhắc gì",
+        "amr_query": "(nhắc :ARG0(chủ_tịch :mod(xã)))",
+        "matched_sentences": [
+          {
+            "sentence": "tôi nhớ lời anh chủ tịch xã Bùi Văn Luyến nhắc đi nhắc lại",
+            "amr": "(nhớ :pivot(tôi) :theme(lời :poss(chủ_tịch :mod(xã) :agent-of(nhắc))))",
+            "roles": {
+              "speaker": "chủ_tịch xã",
+              "action": "nhắc",
+              "listener": "implied"
+            },
+            "match_score": 0.95,
+            "highlight": "chủ tịch xã là :agent-of(nhắc) - người thực hiện hành động nói"
+          }
+        ],
+        "non_matched_examples": [
+          {
+            "sentence": "họp bàn về chủ tịch xã",
+            "reason": "chủ_tịch là đối tượng được nói đến, không phải người nói",
+            "amr": "(họp :topic(chủ_tịch))"
+          }
+        ]
+      },
+      {
+        "query": "Tìm tin về người đi nước ngoài làm việc",
+        "amr_query": "(làm_việc :ARG0(người) :location(nước_ngoài))",
+        "matched_sentences": [
+          {
+            "sentence": "đến nay xã có 672 người đi làm việc ở nước ngoài",
+            "amr": "(có :ARG0(xã) :ARG1(người :quant(672) :agent-of(làm_việc :location(nước_ngoài))))",
+            "roles": {
+              "worker": "người",
+              "action": "làm_việc",
+              "location": "nước_ngoài"
+            },
+            "match_score": 0.92
+          },
+          {
+            "sentence": "sau ba năm làm việc ở nước ngoài, họ tạo vốn giúp gia đình",
+            "amr": "(tạo :ARG0(họ :agent-of(làm_việc :location(nước_ngoài) :duration(3_năm))) :ARG1(vốn))",
+            "match_score": 0.88
+          }
+        ]
+      }
+    ]
+  },
+
+  "use_case_2_fact_comparison": {
+    "description": "So sánh 2 câu để phát hiện mâu thuẫn hoặc xác nhận",
+    "examples": [
+      {
+        "name": "Consistent Facts (Sự thật nhất quán)",
+        "sentence_1": "xã có 68 tổ nhân dân, mỗi tổ phụ trách 40 gia đình",
+        "sentence_2": "đến nay xã có 672 người đi làm việc ở nước ngoài",
+        "amr_1": "(có :ARG0(xã) :ARG1(tổ :quant(68) :agent-of(phụ_trách :ARG1(gia_đình :quant(40)))))",
+        "amr_2": "(có :ARG0(xã) :ARG1(người :quant(672) :agent-of(làm_việc :location(nước_ngoài))))",
+        "comparison_result": {
+          "structure_similarity": 0.85,
+          "same_subject": "xã",
+          "different_objects": ["tổ nhân dân", "người đi nước ngoài"],
+          "conclusion": "Không mâu thuẫn - 2 sự thật khác nhau về cùng chủ thể",
+          "verdict": "CONSISTENT"
+        }
+      },
+      {
+        "name": "Paraphrase (Viết lại cùng nghĩa)",
+        "sentence_1": "người lao động đi nước ngoài tạo vốn giúp gia đình thoát nghèo",
+        "sentence_2": "gia đình thoát nghèo nhờ vốn từ người lao động đi nước ngoài",
+        "amr_1": "(thoát :ARG0(gia_đình) :ARG1(nghèo) :manner(vốn :source(người_lao_động :agent-of(đi :destination(nước_ngoài)))))",
+        "amr_2": "(thoát :ARG0(gia_đình) :ARG1(nghèo) :cause(vốn :source(người_lao_động :agent-of(đi :destination(nước_ngoài)))))",
+        "comparison_result": {
+          "structure_similarity": 0.94,
+          "same_core": "(thoát :ARG0(gia_đình) :ARG1(nghèo))",
+          "same_roles": ["ARG0: gia_đình", "ARG1: nghèo", "source: người_lao_động"],
+          "conclusion": "Cùng nghĩa, khác cách diễn đạt",
+          "verdict": "PARAPHRASE"
+        }
+      }
+    ]
+  },
+
+  "use_case_3_sentence_analysis": {
+    "description": "Phân tích vai trò ngữ nghĩa và so sánh câu",
+    "level_1_easy": {
+      "description": "Câu đơn giản, vai trò rõ ràng (95%+ accuracy expected)",
+      "examples": [
+        {
+          "group": "word_order_variation",
+          "sentences": [
+            "người đảng viên phải làm gương",
+            "làm gương là việc người đảng viên phải làm",
+            "phải làm gương, người đảng viên"
+          ],
+          "expected_amr": "(làm_gương :ARG0(người :mod(đảng_viên)) :modality(phải))",
+          "roles": {
+            "ARG0": "người đảng viên (chủ thể làm)",
+            "modality": "phải (bắt buộc)"
+          },
+          "demo_point": "Thứ tự từ khác nhau → Cùng vai trò ngữ nghĩa"
+        },
+        {
+          "group": "passive_active_voice",
+          "sentences": [
+            "xã mời các cán bộ về tập huấn",
+            "các cán bộ được xã mời về tập huấn",
+            "các cán bộ được mời về tập huấn bởi xã"
+          ],
+          "expected_amr": "(mời :ARG0(xã) :ARG1(cán_bộ) :purpose(tập_huấn))",
+          "roles": {
+            "ARG0": "xã (người mời)",
+            "ARG1": "cán_bộ (được mời)",
+            "purpose": "tập_huấn (mục đích)"
+          },
+          "demo_point": "Câu chủ động ↔ Câu bị động → Vai trò không đổi"
+        }
+      ]
+    },
+
+    "level_2_medium": {
+      "description": "Câu có modifier, location (80%+ accuracy expected)",
+      "examples": [
+        {
+          "sentence": "nhiều người từ nghèo khó nhất xã đã có vốn mở cơ sở",
+          "amr": "(có :ARG0(người :quant(nhiều) :source(nghèo_khó :superlative(nhất) :location(xã))) :ARG1(vốn :purpose(mở :ARG1(cơ_sở))))",
+          "roles": {
+            "ARG0": "người (nhiều, từ nghèo khó nhất xã)",
+            "ARG1": "vốn",
+            "purpose": "mở cơ sở"
+          },
+          "complexity": "medium - có modifier, superlative, purpose"
+        },
+        {
+          "sentence": "sau ba năm làm việc ở nước ngoài, họ tiếp cận môi trường làm việc công nghiệp",
+          "amr": "(tiếp_cận :ARG0(họ :agent-of(làm_việc :location(nước_ngoài) :duration(3_năm))) :ARG1(môi_trường :mod(công_nghiệp)))",
+          "roles": {
+            "ARG0": "họ (đã làm việc 3 năm ở nước ngoài)",
+            "ARG1": "môi trường công nghiệp",
+            "time": "sau 3 năm"
+          }
+        }
+      ]
+    },
+
+    "favorable_cases": {
+      "description": "Cases mà model hiện tại làm TỐT (dùng cho demo)",
+      "examples": [
+        {
+          "name": "Simple SVO with location",
+          "sentence": "tôi học ở trường",
+          "variations": [
+            "ở trường, tôi học",
+            "tôi ở trường học",
+            "học ở trường là tôi"
+          ],
+          "expected_amr": "(học :ARG0(tôi) :location(trường))",
+          "success_rate": "95%+",
+          "why_favorable": "Câu ngắn, vai trò rõ ràng, structure đơn giản"
+        },
+        {
+          "name": "Agent-of relationship",
+          "sentence": "người lao động đi nước ngoài",
+          "amr": "(người :agent-of(đi :destination(nước_ngoài)) :mod(lao_động))",
+          "success_rate": "90%+",
+          "why_favorable": "Quan hệ :agent-of rất phổ biến trong training data"
+        },
+        {
+          "name": "Possession with modifier",
+          "sentence": "lời của chủ tịch xã",
+          "variations": [
+            "lời chủ tịch xã",
+            "chủ tịch xã có lời"
+          ],
+          "expected_amr": "(lời :poss(chủ_tịch :mod(xã)))",
+          "success_rate": "88%+",
+          "why_favorable": "Pattern :poss + :mod xuất hiện nhiều trong data"
+        }
+      ]
+    }
+  },
+
+  "demo_workflow": {
+    "page_1_visualization": {
+      "input": "người lao động đi nước ngoài tạo vốn giúp gia đình thoát nghèo",
+      "output": {
+        "tree_view": "D3.js visualization of AMR tree",
+        "text_view": "(thoát :ARG0(gia_đình) :ARG1(nghèo) :manner(vốn :source(...)))",
+        "role_table": {
+          "ARG0": "gia_đình (chủ thể thoát)",
+          "ARG1": "nghèo (thoát khỏi cái gì)",
+          "manner": "vốn (cách thức)",
+          "source": "người_lao_động (nguồn vốn)"
+        }
+      }
+    },
+
+    "page_2_event_extraction": {
+      "query": "Tìm tin về chủ tịch xã nói gì",
+      "keyword_results": {
+        "total": 30,
+        "precision": "40%",
+        "issues": "Nhiều kết quả nói VỀ chủ tịch, không phải chủ tịch nói"
+      },
+      "amr_results": {
+        "total": 5,
+        "precision": "90%",
+        "advantage": "Chỉ match khi chủ_tịch là :agent-of(nói/nhắc)"
+      }
+    },
+
+    "page_3_sentence_analysis": {
+      "tab_1_paraphrase": {
+        "sentence_1": "người đảng viên phải làm gương",
+        "sentence_2": "làm gương là việc người đảng viên phải làm",
+        "amr_similarity": "96%",
+        "text_similarity": "42%",
+        "verdict": "Paraphrase detected by AMR!"
+      },
+      "tab_2_fact_comparison": {
+        "sentence_1": "xã có 68 tổ nhân dân",
+        "sentence_2": "xã có 672 người đi nước ngoài",
+        "verdict": "Không mâu thuẫn - 2 sự thật khác nhau"
+      },
+      "tab_3_role_extraction": {
+        "sentence": "tôi nhớ lời chủ tịch xã nhắc",
+        "extracted_roles": {
+          "rememberer": "tôi",
+          "thing_remembered": "lời",
+          "speaker": "chủ_tịch xã",
+          "action": "nhắc"
+        }
+      }
+    }
+  }
+}
