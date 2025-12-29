@@ -10,25 +10,26 @@ from pathlib import Path
 
 def ensure_hf_login(require_write=True):
     """
-    Ensure user is logged in to HuggingFace before training
+    Check if user is logged in to HuggingFace (non-blocking)
 
     Args:
         require_write: Whether to require write permission (for push to hub)
 
     Returns:
-        bool: True if login successful or already logged in
+        bool: True if login successful or already logged in, False otherwise
 
-    Raises:
-        SystemExit: If login fails and is required
+    Note:
+        This function does NOT force login or exit on failure.
+        Use manual login: huggingface-cli login
     """
     try:
-        from huggingface_hub import HfApi, login
+        from huggingface_hub import HfApi
     except ImportError:
-        print("❌ huggingface_hub not installed")
+        print("⚠️  huggingface_hub not installed (optional for training)")
         print("Install with: pip install huggingface_hub")
-        sys.exit(1)
+        return False
 
-    # Check if already logged in
+    # Check if already logged in (using cached credentials from huggingface-cli)
     try:
         api = HfApi()
         user_info = api.whoami()
@@ -39,46 +40,14 @@ def ensure_hf_login(require_write=True):
         return True
 
     except Exception:
-        # Not logged in, need to login
-        print("⚠️  Not logged in to HuggingFace")
-        print("Attempting automatic login...")
+        # Not logged in - this is OK, just inform user
+        print("ℹ️  Not logged in to HuggingFace (optional for training)")
+        print("\nTo enable model downloads and HF features, login manually:")
+        print("  huggingface-cli login")
+        print("  # Then paste your token from https://huggingface.co/settings/tokens")
+        print("\nContinuing without HuggingFace login...")
 
-        # Try to get token from environment or .env
-        token = get_hf_token()
-
-        if token:
-            try:
-                login(token=token, add_to_git_credential=False)
-
-                # Verify login
-                user_info = api.whoami()
-                print("✅ Login successful")
-                print(f"   User: {user_info['name']}")
-
-                return True
-
-            except Exception as e:
-                print(f"❌ Login failed: {e}")
-                print("\nPlease login manually:")
-                print("  Method 1 (CLI): huggingface-cli login")
-                print("  Method 2 (Script): python3 hf_login.py")
-                sys.exit(1)
-        else:
-            print("\n❌ No HuggingFace token found")
-            print("\nPlease login using one of these methods:")
-            print("\n1. CLI Login (RECOMMENDED):")
-            print("   huggingface-cli login")
-            print("   # Then paste your token")
-            print("\n2. Environment Variable:")
-            print("   export HF_TOKEN=your_token_here")
-            print("\n3. .env File:")
-            print("   echo 'HF_TOKEN=your_token_here' > .env")
-            print("\n4. Script:")
-            print("   python3 hf_login.py")
-            print("\nGet token from: https://huggingface.co/settings/tokens")
-            print("(Needs 'Write' permission)\n")
-
-            sys.exit(1)
+        return False
 
 
 def get_hf_token():
