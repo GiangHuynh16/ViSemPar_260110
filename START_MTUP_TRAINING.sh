@@ -47,7 +47,7 @@ echo "🚀 Starting training..."
 echo ""
 
 # Run training
-python train_mtup.py --use_case reentrancy
+python train_mtup.py --use-case full_training --epochs 15
 
 echo ""
 echo "=========================================="
