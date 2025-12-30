@@ -273,18 +273,29 @@ def setup_model_and_tokenizer(args):
     # Load model
     logger.info("\nLoading model...")
 
-    # For non-quantized mode, use CPU offloading to reduce GPU memory
+    # CRITICAL FIX: device_map + gradient_checkpointing causes "expected device meta but got cuda:0" error
+    # Solution: Load model DIRECTLY on GPU without device_map, use gradient checkpointing instead
+    #
+    # Memory strategy:
+    # - Load full model in FP16: ~14GB
+    # - LoRA adapters: ~0.5GB
+    # - Gradient checkpointing: saves activation memory
+    # - batch_size=1, seq=512: minimal activation footprint
+    # Total: Should fit in 24GB VRAM
+
     if not use_quantization and torch.cuda.is_available():
-        logger.info("⚠️  Loading model with maximum CPU offload (14GB GPU limit)")
+        logger.info("⚠️  Loading model DIRECTLY on GPU (no device_map, no CPU offload)")
+        logger.info("   Memory strategy: FP16 + gradient checkpointing + batch_size=1")
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
-            quantization_config=None,  # Don't use quantization config when disabled
-            device_map="auto",
-            max_memory={0: "14GB", "cpu": "50GB"},  # Limit GPU to 14GB, reserve 10GB for training
-            offload_folder="offload",
+            quantization_config=None,
+            device_map=None,  # DISABLED - load to GPU directly
             trust_remote_code=True,
             torch_dtype=torch.float16
         )
+        # Move to GPU explicitly
+        model = model.to("cuda:0")
+        logger.info(f"✓ Model loaded on GPU: {torch.cuda.memory_allocated(0) / 1024**3:.2f} GB allocated")
     else:
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
@@ -293,10 +304,10 @@ def setup_model_and_tokenizer(args):
             trust_remote_code=True,
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
         )
-
-    logger.info(f"✓ Model loaded")
+        logger.info(f"✓ Model loaded")
 
     # Enable gradient checkpointing to reduce memory usage (SAME AS MTUP)
+    # This is now safe because we're not using device_map
     model.gradient_checkpointing_enable()
     logger.info("✓ Gradient checkpointing enabled (reduces memory usage)")
 
@@ -386,19 +397,8 @@ def train_baseline_model(model, tokenizer, train_dataset, val_dataset, args):
         mlm=False
     )
 
-    # CRITICAL FIX: Monkey-patch Trainer to prevent moving model when using device_map
-    # The model is already distributed across devices, moving it causes meta tensor error
-    from transformers.trainer import Trainer as OriginalTrainer
-    original_move = OriginalTrainer._move_model_to_device
-
-    def patched_move(self, model, device):
-        """Skip moving model if it has device_map (already placed)"""
-        if hasattr(model, 'hf_device_map') or (hasattr(model, 'base_model') and hasattr(model.base_model, 'hf_device_map')):
-            logger.info("⚠️  Model already distributed via device_map, skipping .to(device)")
-            return
-        original_move(self, model, device)
-
-    OriginalTrainer._move_model_to_device = patched_move
+    # NOTE: Monkey-patch no longer needed since we're not using device_map
+    # Model is loaded directly on GPU, so Trainer can move it normally
 
     # Initialize trainer
     trainer = Trainer(
