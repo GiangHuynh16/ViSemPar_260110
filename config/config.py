@@ -16,10 +16,9 @@ CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
 # NOTE: Directories must be created manually before training
 # Run: mkdir -p data outputs logs outputs/checkpoints
 
-# Model Configuration - BASELINE (Unified with MTUP for fair comparison)
-# UPDATED: Using 7B for fair comparison with MTUP 7B (24GB VRAM available)
-MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
-MAX_SEQ_LENGTH = 1024  # Optimized: 2048→1024 saves ~50% activation memory without reducing model params
+# Model Configuration - BASELINE (Same as MTUP for fair comparison)
+MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"  # Same as MTUP
+MAX_SEQ_LENGTH = 2048  # Same as MTUP
 
 # Quantization - Disabled (same as MTUP)
 USE_4BIT_QUANTIZATION = False  # Disabled - bitsandbytes not available
@@ -41,9 +40,9 @@ LORA_CONFIG = {
 # Training Configuration - Optimized for convergence
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,
-    "num_train_epochs": 15,              # Same as MTUP 7B for fair comparison
-    "per_device_train_batch_size": 1,    # CRITICAL: Reduced to 1 to avoid OOM (was 2)
-    "gradient_accumulation_steps": 16,   # INCREASED: Keep effective batch size = 16 (was 8)
+    "num_train_epochs": 15,              # Same as MTUP
+    "per_device_train_batch_size": 2,    # Same as MTUP
+    "gradient_accumulation_steps": 8,    # Same as MTUP (effective batch = 16)
     "warmup_steps": 100,                 # Same as MTUP
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,

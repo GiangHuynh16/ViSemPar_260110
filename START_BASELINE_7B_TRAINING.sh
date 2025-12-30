@@ -1,30 +1,32 @@
 #!/bin/bash
-# Start Baseline training with Qwen 2.5 7B + LoRA rank 128
-# For fair comparison with MTUP 7B
+# Start Baseline training with Qwen 2.5 3B + LoRA rank 128
+# NOTE: Switched from 7B to 3B due to 24GB VRAM hardware constraint
 
 set -e
 
 echo "=========================================="
-echo "BASELINE 7B TRAINING - SINGLE-TASK"
+echo "BASELINE 3B TRAINING - SINGLE-TASK"
 echo "=========================================="
 echo ""
+echo "⚠️  NOTE: Using 3B instead of 7B due to hardware constraints"
+echo "   7B model cannot fit in 24GB VRAM even with CPU offload"
+echo ""
 echo "Baseline approach (Single-Task):"
-echo "  Model: Qwen 2.5 7B"
+echo "  Model: Qwen 2.5 3B"
 echo "  LoRA rank: 128"
-echo "  Trainable params: ~239M (same as MTUP)"
+echo "  Trainable params: ~100M"
 echo "  Task: Direct Sentence → AMR mapping"
-echo "  Purpose: Fair comparison with MTUP"
+echo "  Purpose: Baseline comparison (not directly comparable with MTUP 7B)"
 echo ""
 echo "Training configuration:"
-echo "  - Epochs: 15 (same as MTUP)"
-echo "  - Batch size: 1 (per device, optimized for memory)"
-echo "  - Gradient accumulation: 16 (increased to maintain effective batch)"
-echo "  - Effective batch size: 16 (same as MTUP)"
-echo "  - Max sequence length: 1024 (optimized from 2048)"
-echo "  - Max GPU memory: 12GB (maximum CPU offload)"
+echo "  - Epochs: 15"
+echo "  - Batch size: 2 (per device)"
+echo "  - Gradient accumulation: 8"
+echo "  - Effective batch size: 16"
+echo "  - Max sequence length: 2048 (full length)"
 echo "  - Learning rate: 2e-4"
-echo "  - Estimated time: ~15-18 hours (slower due to CPU offload)"
-echo "  - Peak VRAM usage: ~12-15 GB (maximum optimization)"
+echo "  - Estimated time: ~8-10 hours"
+echo "  - Peak VRAM usage: ~12-14 GB"
 echo ""
 
 # Check VRAM

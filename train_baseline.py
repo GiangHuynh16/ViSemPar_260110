@@ -273,20 +273,18 @@ def setup_model_and_tokenizer(args):
     # Load model
     logger.info("\nLoading model...")
 
+    # For non-quantized mode, use CPU offloading to reduce GPU memory (SAME AS MTUP)
     if not use_quantization and torch.cuda.is_available():
-        logger.info("⚠️  Loading model with device_map for CPU offload")
+        logger.info("⚠️  Loading model with CPU offload to reduce GPU memory usage")
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
-            quantization_config=None,
+            quantization_config=None,  # Don't use quantization config when disabled
             device_map="auto",
-            max_memory={0: "12GB", "cpu": "50GB"},
+            max_memory={0: "20GB", "cpu": "30GB"},  # Reserve 3.5GB GPU memory for activations/gradients
             offload_folder="offload",
             trust_remote_code=True,
             torch_dtype=torch.float16
         )
-        # Mark model as already on device to prevent Trainer from moving it
-        model.is_parallelizable = True
-        model.model_parallel = True
     else:
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
@@ -298,10 +296,9 @@ def setup_model_and_tokenizer(args):
 
     logger.info(f"✓ Model loaded")
 
-    # NOTE: Gradient checkpointing enabled via TrainingArguments instead
-    # Enabling here can cause memory issues with device_map="auto"
-    # model.gradient_checkpointing_enable()
-    # logger.info("✓ Gradient checkpointing enabled")
+    # Enable gradient checkpointing to reduce memory usage (SAME AS MTUP)
+    model.gradient_checkpointing_enable()
+    logger.info("✓ Gradient checkpointing enabled (reduces memory usage)")
 
     # Prepare for k-bit training if quantized
     if use_quantization and torch.cuda.is_available():
@@ -327,15 +324,6 @@ def setup_model_and_tokenizer(args):
             if 'lora_' in name:
                 param.requires_grad = True
         logger.info("✓ Enabled gradients for LoRA parameters")
-
-    # CRITICAL: Mark model as parallelizable AFTER applying LoRA
-    # This prevents Trainer from trying to move the model with .to(device)
-    if hasattr(model, 'base_model'):
-        model.base_model.is_parallelizable = True
-        model.base_model.model_parallel = True
-    model.is_parallelizable = True
-    model.model_parallel = True
-    logger.info("✓ Model marked as parallelizable to preserve device_map")
 
     model.print_trainable_parameters()
 
@@ -377,13 +365,11 @@ def train_baseline_model(model, tokenizer, train_dataset, val_dataset, args):
         load_best_model_at_end=TRAINING_CONFIG.get('load_best_model_at_end', True) if val_dataset else False,
         metric_for_best_model=TRAINING_CONFIG.get('metric_for_best_model', 'loss') if val_dataset else None,
         fp16=torch.cuda.is_available(),
-        gradient_checkpointing=True,  # Enable for memory optimization
+        gradient_checkpointing=False,  # Disable for non-quantized mode (SAME AS MTUP)
         optim=TRAINING_CONFIG.get('optim', 'adamw_torch'),
         lr_scheduler_type=TRAINING_CONFIG.get('lr_scheduler_type', 'cosine'),
         report_to=["tensorboard"],
         logging_dir=str(OUTPUT_DIR / "logs" / f"baseline_{timestamp}"),
-        ddp_find_unused_parameters=False,  # Important for models with device_map
-        remove_unused_columns=False,  # Keep all columns when using device_map
     )
 
     logger.info("Training Configuration:")
