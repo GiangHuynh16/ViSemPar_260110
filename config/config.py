@@ -41,8 +41,8 @@ LORA_CONFIG = {
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,
     "num_train_epochs": 15,              # Same as MTUP
-    "per_device_train_batch_size": 2,    # Same as MTUP
-    "gradient_accumulation_steps": 8,    # Same as MTUP (effective batch = 16)
+    "per_device_train_batch_size": 1,    # Reduced to 1 (MTUP uses 2 but OOM here)
+    "gradient_accumulation_steps": 16,   # Increased to 16 to keep effective batch = 16
     "warmup_steps": 100,                 # Same as MTUP
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
