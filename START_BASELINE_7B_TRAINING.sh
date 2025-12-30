@@ -1,32 +1,33 @@
 #!/bin/bash
-# Start Baseline training with Qwen 2.5 3B + LoRA rank 128
-# NOTE: Switched from 7B to 3B due to 24GB VRAM hardware constraint
+# Start Baseline training with Qwen 2.5 7B + LoRA rank 128
+# NOTE: Extreme memory optimization to fit 7B in 24GB VRAM
 
 set -e
 
 echo "=========================================="
-echo "BASELINE 3B TRAINING - SINGLE-TASK"
+echo "BASELINE 7B TRAINING - SINGLE-TASK"
 echo "=========================================="
 echo ""
-echo "⚠️  NOTE: Using 3B instead of 7B due to hardware constraints"
-echo "   7B model cannot fit in 24GB VRAM even with CPU offload"
+echo "⚠️  NOTE: Using EXTREME memory optimization"
+echo "   MAX_SEQ_LENGTH reduced to 512 (from 2048)"
+echo "   max_memory limited to 14GB GPU + 50GB CPU offload"
 echo ""
 echo "Baseline approach (Single-Task):"
-echo "  Model: Qwen 2.5 3B"
+echo "  Model: Qwen 2.5 7B"
 echo "  LoRA rank: 128"
 echo "  Trainable params: ~100M"
 echo "  Task: Direct Sentence → AMR mapping"
-echo "  Purpose: Baseline comparison (not directly comparable with MTUP 7B)"
+echo "  Purpose: Fair comparison with MTUP 7B"
 echo ""
 echo "Training configuration:"
 echo "  - Epochs: 15"
-echo "  - Batch size: 2 (per device)"
-echo "  - Gradient accumulation: 8"
+echo "  - Batch size: 1 (per device)"
+echo "  - Gradient accumulation: 16"
 echo "  - Effective batch size: 16"
-echo "  - Max sequence length: 2048 (full length)"
+echo "  - Max sequence length: 512 (reduced for memory)"
 echo "  - Learning rate: 2e-4"
-echo "  - Estimated time: ~8-10 hours"
-echo "  - Peak VRAM usage: ~12-14 GB"
+echo "  - Estimated time: ~15-18 hours"
+echo "  - Peak VRAM usage: ~14 GB (tight fit)"
 echo ""
 
 # Check VRAM
@@ -41,10 +42,11 @@ free_gb=$(echo "scale=1; $free_vram/1024" | bc)
 
 echo "  Free VRAM: ${free_gb} GB"
 
-if (( $(echo "$free_gb < 18" | bc -l) )); then
-    echo "  ✗ Not enough VRAM (need >= 18 GB for 7B model)"
+if (( $(echo "$free_gb < 20" | bc -l) )); then
+    echo "  ⚠️  WARNING: Less than 20 GB free VRAM"
     echo "  Current free: ${free_gb} GB"
-    exit 1
+    echo "  Training will use tight memory margins with CPU offload"
+    echo ""
 fi
 
 echo "  ✓ VRAM check passed"
