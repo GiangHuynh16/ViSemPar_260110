@@ -17,10 +17,12 @@ CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
 # Run: mkdir -p data outputs logs outputs/checkpoints
 
 # Model Configuration - BASELINE (Unified with MTUP for fair comparison)
-# NOTE: Using 3B instead of 7B due to GPU memory constraints (no quantization)
-# 7B requires bitsandbytes for quantization which is not available
-MODEL_NAME = "Qwen/Qwen2.5-3B-Instruct"
+# UPDATED: Using 7B for fair comparison with MTUP 7B (24GB VRAM available)
+MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
 MAX_SEQ_LENGTH = 2048  # Sufficient for complex AMR structures
+
+# Quantization - Disabled (same as MTUP)
+USE_4BIT_QUANTIZATION = False  # Disabled - bitsandbytes not available
 
 # LoRA Configuration - Optimized for Vietnamese AMR
 LORA_CONFIG = {
@@ -39,19 +41,21 @@ LORA_CONFIG = {
 # Training Configuration - Optimized for convergence
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,
-    "num_train_epochs": 10,              # Same as MTUP for fair comparison
-    "per_device_train_batch_size": 4,    # 3B model can handle larger batch
-    "gradient_accumulation_steps": 4,    # Effective batch size: 16
+    "num_train_epochs": 15,              # Same as MTUP 7B for fair comparison
+    "per_device_train_batch_size": 2,    # REDUCED: 7B model needs smaller batch
+    "gradient_accumulation_steps": 8,    # INCREASED: Keep effective batch size = 16
     "warmup_steps": 100,                 # Same as MTUP
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
     "logging_steps": 10,
-    "save_steps": 250,                   # Same as MTUP
-    "save_total_limit": 3,
+    "save_steps": 200,                   # Same as MTUP 7B
+    "save_total_limit": 5,               # Same as MTUP 7B
     "fp16": True,
-    "optim": "adamw_8bit",
+    "optim": "adamw_torch",              # FIXED: Use standard AdamW (adamw_8bit requires bitsandbytes)
     "lr_scheduler_type": "cosine",
     "seed": 42,
+    "load_best_model_at_end": True,      # ADDED: Load best checkpoint at end
+    "metric_for_best_model": "loss",     # ADDED: Use loss as metric
 }
 
 # Inference Configuration
@@ -76,9 +80,9 @@ DATA_CONFIG = {
 
 # Hugging Face Configuration
 HF_CONFIG = {
-    "repo_name": "vietnamese-amr-qwen-improved",
+    "repo_name": "vietnamese-amr-baseline-7b",  # Updated for 7B baseline
     "private": False,
-    "push_to_hub": True,
+    "push_to_hub": False,                       # Set to True when ready
     "hub_strategy": "every_save",
 }
 
@@ -94,13 +98,16 @@ EVAL_CONFIG = {
     "min_delta": 0.001,              # Minimum improvement threshold
 }
 
-# Preprocessing improvements
+# Preprocessing improvements - Minimal for LLM
+# Philosophy: Let the LLM learn from raw data, minimal preprocessing
 PREPROCESSING_CONFIG = {
-    "preserve_coreference": True,
-    "normalize_concepts": True,
-    "handle_multiword": True,
-    "fix_malformed_amr": True,
-    "remove_variables": False,  # Keep variables during training
+    "preserve_coreference": True,       # Keep coreference info
+    "normalize_concepts": False,        # DON'T normalize - let LLM learn variations
+    "handle_multiword": False,          # DON'T preprocess - let LLM learn underscore patterns
+    "fix_malformed_amr": True,          # Only fix obviously broken AMRs
+    "remove_variables": False,          # Keep variables during training
+    "clean_whitespace": True,           # Basic whitespace cleaning only
+    "validate_structure": True,         # Validate parentheses balance
 }
 
 # System Configuration
@@ -110,16 +117,19 @@ SYSTEM_CONFIG = {
     "use_cache": True,
 }
 
-# Prompt Template
-PROMPT_TEMPLATE = """Below is an instruction that describes a task. Write a response that appropriately completes the request.
+# Prompt Template - Enhanced for better LLM performance
+PROMPT_TEMPLATE = """Bạn là chuyên gia phân tích ngữ nghĩa tiếng Việt. Hãy chuyển đổi câu sau sang định dạng AMR (Abstract Meaning Representation).
 
-### Instruction:
-Convert the following Vietnamese sentence to Abstract Meaning Representation (AMR) format. Ensure proper concept alignment and preserve co-references.
+Quy tắc quan trọng:
+- Sử dụng khái niệm tiếng Việt có dấu gạch dưới (ví dụ: chủ_tịch, môi_trường)
+- Gán biến cho mỗi khái niệm (ví dụ: c / chủ_tịch)
+- Sử dụng quan hệ chuẩn AMR (:ARG0, :ARG1, :time, :location, etc.)
+- Giữ nguyên cấu trúc cây với dấu ngoặc đơn cân bằng
+- Đảm bảo tất cả biến được định nghĩa trước khi sử dụng
 
-### Input:
-{sentence}
+Câu tiếng Việt: {sentence}
 
-### Response:
+AMR:
 """
 
 # Logging Configuration

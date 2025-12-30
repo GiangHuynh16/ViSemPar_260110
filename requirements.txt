@@ -1,3 +1,8 @@
+# Vietnamese AMR Parser - Environment Requirements
+# Python 3.10+
+# CUDA 12.1+
+# Tested on: Quadro RTX 6000 (24GB VRAM)
+
 # PyTorch ecosystem - Install with matching CUDA version
 # For CUDA 11.8: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 # For CUDA 12.1: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
@@ -8,7 +13,8 @@ torchaudio>=2.3.0
 # Core transformers
 transformers==4.46.3
 accelerate==1.2.1
-bitsandbytes==0.44.1
+# NOTE: bitsandbytes REMOVED - Triton compatibility issues
+# Use adamw_torch optimizer instead of adamw_8bit
 
 # LoRA training
 peft==0.13.2

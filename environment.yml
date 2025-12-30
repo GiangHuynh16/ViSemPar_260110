@@ -1,0 +1,68 @@
+name: viamr
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python
+  - python=3.10
+
+  # PyTorch and CUDA
+  - pytorch::pytorch=2.1.0
+  - pytorch::torchvision=0.16.0
+  - pytorch::torchaudio=2.1.0
+  - pytorch::pytorch-cuda=12.1
+
+  # Core ML libraries
+  - numpy>=1.24.0
+  - scipy>=1.10.0
+  - scikit-learn>=1.3.0
+
+  # Data processing
+  - pandas>=2.0.0
+  - tqdm>=4.65.0
+
+  # Jupyter (optional)
+  - jupyter>=1.0.0
+  - ipykernel>=6.25.0
+
+  # Pip packages
+  - pip>=23.0.0
+  - pip:
+      # Transformers and HuggingFace
+      - transformers>=4.36.0
+      - accelerate>=0.25.0
+      - huggingface-hub>=0.20.0
+      - datasets>=2.16.0
+
+      # PEFT for LoRA
+      - peft>=0.7.0
+
+      # Tokenizers
+      - tokenizers>=0.15.0
+      - sentencepiece>=0.1.99
+
+      # AMR processing
+      - smatch>=1.0.4
+      - penman>=1.2.0
+
+      # Training utilities
+      - tensorboard>=2.15.0
+      - wandb>=0.16.0
+
+      # Vietnamese NLP (optional)
+      - underthesea>=6.7.0
+      - pyvi>=0.1.1
+
+      # Utilities
+      - python-dotenv>=1.0.0
+      - pyyaml>=6.0
+      - colorama>=0.4.6
+      - regex>=2023.10.0
+
+# Notes:
+# 1. bitsandbytes is NOT included (compatibility issues with Triton)
+# 2. Use adamw_torch instead of adamw_8bit
+# 3. No 4-bit quantization (USE_4BIT_QUANTIZATION=False)
