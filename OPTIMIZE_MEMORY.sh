@@ -45,8 +45,8 @@ echo ""
 # Step 4: Set optimal CUDA memory allocation settings
 echo "Step 4: Setting CUDA memory allocation optimizations..."
 echo ""
-export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128,expandable_segments:True"
-echo "  ✓ Set PYTORCH_CUDA_ALLOC_CONF=$PYTORCH_CUDA_ALLOC_CONF"
+export PYTORCH_ALLOC_CONF="max_split_size_mb:128,expandable_segments:True"
+echo "  ✓ Set PYTORCH_ALLOC_CONF=$PYTORCH_ALLOC_CONF"
 echo ""
 
 # Step 5: Disable unnecessary parallelism
@@ -93,7 +93,7 @@ if [ "$FREE_MEM" -ge "$REQUIRED_MB" ]; then
     echo "  bash START_BASELINE_7B_TRAINING.sh"
     echo ""
     echo "Or with optimized environment variables:"
-    echo "  PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128,expandable_segments:True \\"
+    echo "  PYTORCH_ALLOC_CONF=max_split_size_mb:128,expandable_segments:True \\"
     echo "  TOKENIZERS_PARALLELISM=false \\"
     echo "  python train_baseline.py --epochs 15"
     echo ""
@@ -107,7 +107,7 @@ else
     echo "Options:"
     echo "  1. Check for other GPU processes: nvidia-smi"
     echo "  2. Reboot server to clear all memory"
-    echo "  3. Use smaller max_seq_length (already optimized to 1536)"
+    echo "  3. Use smaller max_seq_length (already optimized to 1024)"
     echo ""
 fi
 
@@ -115,7 +115,7 @@ fi
 cat << 'ENVEOF'
 
 To apply these optimizations to your current shell, run:
-  export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128,expandable_segments:True"
+  export PYTORCH_ALLOC_CONF="max_split_size_mb:128,expandable_segments:True"
   export TOKENIZERS_PARALLELISM=false
   export OMP_NUM_THREADS=4
 

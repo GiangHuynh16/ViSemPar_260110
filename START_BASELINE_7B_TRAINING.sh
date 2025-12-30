@@ -20,10 +20,11 @@ echo "  - Epochs: 15 (same as MTUP)"
 echo "  - Batch size: 1 (per device, optimized for memory)"
 echo "  - Gradient accumulation: 16 (increased to maintain effective batch)"
 echo "  - Effective batch size: 16 (same as MTUP)"
-echo "  - Max sequence length: 1536 (optimized from 2048)"
+echo "  - Max sequence length: 1024 (optimized from 2048)"
+echo "  - Max GPU memory: 16GB (with CPU offload)"
 echo "  - Learning rate: 2e-4"
 echo "  - Estimated time: ~12-15 hours"
-echo "  - Peak VRAM usage: ~18-20 GB (optimized)"
+echo "  - Peak VRAM usage: ~16-18 GB (aggressively optimized)"
 echo ""
 
 # Check VRAM
@@ -72,10 +73,10 @@ echo ""
 
 # Set memory optimizations
 echo "Applying memory optimizations..."
-export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128,expandable_segments:True"
+export PYTORCH_ALLOC_CONF="max_split_size_mb:128,expandable_segments:True"
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=4
-echo "  ✓ PYTORCH_CUDA_ALLOC_CONF set"
+echo "  ✓ PYTORCH_ALLOC_CONF set"
 echo "  ✓ TOKENIZERS_PARALLELISM=false"
 echo ""
 
