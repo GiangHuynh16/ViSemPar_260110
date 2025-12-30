@@ -37,15 +37,16 @@ fi
 echo "  ✓ Batch size is correctly set to 1"
 echo ""
 
-# Step 4: Verify max_memory is 14GB
-echo "Step 4: Verifying max_memory configuration..."
-MAX_MEM=$(grep "max_memory={0:" train_baseline.py | grep -oP '\d+GB' | head -1)
-echo "  Found: max_memory GPU limit = $MAX_MEM"
-if [ "$MAX_MEM" != "14GB" ]; then
-    echo "  ✗ ERROR: max_memory should be 14GB, but found $MAX_MEM"
+# Step 4: Verify device_map is None (no CPU offload)
+echo "Step 4: Verifying device_map configuration..."
+DEVICE_MAP_LINE=$(grep "device_map=None" train_baseline.py | grep -v "^#" | head -1)
+if [ -z "$DEVICE_MAP_LINE" ]; then
+    echo "  ✗ ERROR: device_map should be None (no CPU offload)"
+    echo "  This is required to avoid meta tensor errors"
     exit 1
 fi
-echo "  ✓ max_memory is correctly set to 14GB GPU limit"
+echo "  Found: device_map=None (direct GPU loading)"
+echo "  ✓ Correct configuration - no CPU offload"
 echo ""
 
 # Step 5: Clear Python cache
@@ -143,10 +144,11 @@ echo "  • MAX_SEQ_LENGTH: 512 ✓"
 echo "  • Batch size: 1 ✓"
 echo "  • Gradient accumulation: 16"
 echo "  • Effective batch: 16"
-echo "  • Max GPU memory: 14GB ✓"
-echo "  • CPU offload: 50GB"
+echo "  • Device map: None (direct GPU) ✓"
+echo "  • Gradient checkpointing: Enabled"
+echo "  • Expected GPU usage: ~20GB"
 echo "  • Epochs: 15"
-echo "  • Estimated time: ~15 hours"
+echo "  • Estimated time: ~15-18 hours"
 echo ""
 
 read -p "Start training now? (y/N): " -n 1 -r
