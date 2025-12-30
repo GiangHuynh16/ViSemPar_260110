@@ -386,6 +386,20 @@ def train_baseline_model(model, tokenizer, train_dataset, val_dataset, args):
         mlm=False
     )
 
+    # CRITICAL FIX: Monkey-patch Trainer to prevent moving model when using device_map
+    # The model is already distributed across devices, moving it causes meta tensor error
+    from transformers.trainer import Trainer as OriginalTrainer
+    original_move = OriginalTrainer._move_model_to_device
+
+    def patched_move(self, model, device):
+        """Skip moving model if it has device_map (already placed)"""
+        if hasattr(model, 'hf_device_map') or (hasattr(model, 'base_model') and hasattr(model.base_model, 'hf_device_map')):
+            logger.info("⚠️  Model already distributed via device_map, skipping .to(device)")
+            return
+        original_move(self, model, device)
+
+    OriginalTrainer._move_model_to_device = patched_move
+
     # Initialize trainer
     trainer = Trainer(
         model=model,
