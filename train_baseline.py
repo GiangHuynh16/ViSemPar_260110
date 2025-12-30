@@ -120,7 +120,7 @@ def check_environment():
 def load_training_data(args):
     """Load and preprocess training data for baseline (single-task)"""
     from config import DATA_DIR, DATA_CONFIG, PROMPT_TEMPLATE
-    from data_loader import load_amr_data
+    from data_loader import AMRDataLoader
 
     logger.info("\n" + "=" * 70)
     logger.info("STEP 1: LOADING TRAINING DATA (BASELINE FORMAT)")
@@ -130,9 +130,12 @@ def load_training_data(args):
     train_files = DATA_CONFIG['train_files']
     all_examples = []
 
+    # Create data loader
+    loader = AMRDataLoader(DATA_DIR)
+
     for file in train_files:
         file_path = DATA_DIR / file
-        examples = load_amr_data(str(file_path))
+        examples = loader.parse_amr_file(file_path)
         all_examples.extend(examples)
         logger.info(f"✓ Loaded {len(examples)} examples from {file}")
 
