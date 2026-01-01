@@ -18,15 +18,15 @@ CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
 
 # Model Configuration - BASELINE (7B for comparison with MTUP)
 MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"  # Must use 7B to compare with MTUP
-MAX_SEQ_LENGTH = 512  # With 4-bit quantization
+MAX_SEQ_LENGTH = 256  # Reduced from 512 to fit in memory without quantization
 
-# Quantization - REQUIRED for 7B
-USE_4BIT_QUANTIZATION = True  # Required - must compile bitsandbytes from source
+# Quantization - DISABLED (server has CUDA 12.6 but PyTorch needs CUDA 11.8 libs)
+USE_4BIT_QUANTIZATION = False  # Disabled - using reduced seq length + gradient checkpointing instead
 
 # LoRA Configuration - Optimized for Vietnamese AMR
 LORA_CONFIG = {
-    "r": 128,                    # Increased rank for better capacity
-    "lora_alpha": 256,           # 2x rank for stability
+    "r": 64,                     # Reduced from 128 to save memory (no quantization)
+    "lora_alpha": 128,           # 2x rank for stability
     "lora_dropout": 0.05,        # Small dropout for regularization
     "target_modules": [
         "q_proj", "k_proj", "v_proj", "o_proj",
@@ -41,7 +41,7 @@ LORA_CONFIG = {
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,
     "num_train_epochs": 15,
-    "per_device_train_batch_size": 1,    # 7B with quantization
+    "per_device_train_batch_size": 1,    # 7B with gradient checkpointing
     "gradient_accumulation_steps": 16,   # Keep effective batch = 16
     "warmup_steps": 100,                 # Same as MTUP
     "weight_decay": 0.01,

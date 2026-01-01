@@ -349,6 +349,13 @@ def setup_model_and_tokenizer(args):
     model = get_peft_model(model, lora_config)
     logger.info("✓ LoRA applied")
 
+    # CRITICAL: Enable gradient checkpointing AFTER LoRA is applied
+    # Must use enable_input_require_grads() for PEFT compatibility
+    if not use_quantization:
+        model.enable_input_require_grads()
+        model.base_model.model.gradient_checkpointing_enable()
+        logger.info("✓ Gradient checkpointing enabled (AFTER LoRA)")
+
     # Verify LoRA parameters have gradients enabled
     lora_params_count = sum(1 for name, param in model.named_parameters() if param.requires_grad and 'lora_' in name)
     if lora_params_count == 0:
@@ -361,15 +368,6 @@ def setup_model_and_tokenizer(args):
     # Set model to training mode
     model.train()
     logger.info("✓ Model set to training mode")
-
-    # DISABLE gradient checkpointing - it conflicts with PEFT LoRA on this PyTorch version
-    # A6000 48GB has enough memory without it:
-    # - Model FP16: ~14GB
-    # - LoRA params: ~0.5GB
-    # - Activations (batch=2, seq=512): ~8GB
-    # - Total: ~23GB (well within 48GB)
-    # model.gradient_checkpointing_enable()
-    logger.info("✓ Gradient checkpointing DISABLED (causes gradient tracking issues with PEFT)")
 
     model.print_trainable_parameters()
 
