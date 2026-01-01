@@ -119,7 +119,13 @@ echo "==========================================="
 echo ""
 
 # Set CUDA library path for bitsandbytes
-export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+if [ -d "/usr/local/cuda-11.8" ]; then
+    export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
+    echo "Using CUDA 11.8 libraries"
+elif [ -d "/usr/local/cuda" ]; then
+    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    echo "Using CUDA libraries from /usr/local/cuda"
+fi
 
 # Set memory optimizations
 # Note: expandable_segments requires PyTorch >= 2.1, we have 2.0.1
@@ -127,8 +133,9 @@ export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=4
 
+echo ""
 echo "Environment variables set:"
-echo "  • LD_LIBRARY_PATH=/usr/local/cuda/lib64 (for bitsandbytes)"
+echo "  • LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo "  • PYTORCH_CUDA_ALLOC_CONF=$PYTORCH_CUDA_ALLOC_CONF"
 echo "  • TOKENIZERS_PARALLELISM=false"
 echo "  • OMP_NUM_THREADS=4"

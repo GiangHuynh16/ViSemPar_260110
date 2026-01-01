@@ -31,14 +31,33 @@ pip install bitsandbytes==0.43.0
 echo "  ✓ Installed"
 echo ""
 
-# Set LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+# Find CUDA installation
+echo "Step 3: Locating CUDA libraries..."
+if [ -d "/usr/local/cuda-11.8" ]; then
+    CUDA_HOME="/usr/local/cuda-11.8"
+    echo "  ✓ Found CUDA 11.8 at $CUDA_HOME"
+elif [ -d "/usr/local/cuda" ]; then
+    CUDA_HOME="/usr/local/cuda"
+    echo "  ✓ Found CUDA at $CUDA_HOME"
+else
+    echo "  ⚠️  CUDA not found in standard locations"
+    CUDA_HOME="/usr/local/cuda"
+fi
+
+# Set LD_LIBRARY_PATH to include CUDA libraries
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+echo "  ✓ Set LD_LIBRARY_PATH=$CUDA_HOME/lib64"
+echo ""
 
 # Verify
-echo "Step 3: Verifying installation..."
-python << 'EOF'
+echo "Step 4: Verifying installation..."
+python << EOF
 import os
-os.environ['LD_LIBRARY_PATH'] = '/usr/local/cuda-11.8/lib64:/usr/local/cuda/lib64:' + os.environ.get('LD_LIBRARY_PATH', '')
+import sys
+
+# Set CUDA library path
+cuda_lib_path = os.environ.get('LD_LIBRARY_PATH', '')
+os.environ['LD_LIBRARY_PATH'] = cuda_lib_path
 
 try:
     import bitsandbytes as bnb
@@ -46,7 +65,8 @@ try:
     print("  ✓ Installation successful!")
 except Exception as e:
     print(f"  ⚠️  Warning: {e}")
-    print("  This is normal - will work when actually training")
+    print("  This may be expected - verify it works during training")
+    sys.exit(0)  # Don't fail the script
 EOF
 
 echo ""
@@ -54,6 +74,10 @@ echo "==========================================="
 echo "INSTALLATION COMPLETE"
 echo "==========================================="
 echo ""
-echo "Now start training:"
+echo "IMPORTANT: Add to your ~/.bashrc to make LD_LIBRARY_PATH permanent:"
+echo "  echo 'export LD_LIBRARY_PATH=$CUDA_HOME/lib64:\$LD_LIBRARY_PATH' >> ~/.bashrc"
+echo "  source ~/.bashrc"
+echo ""
+echo "OR just start training now (LD_LIBRARY_PATH is set in START_TRAINING_NOW.sh):"
 echo "  bash START_TRAINING_NOW.sh"
 echo ""
