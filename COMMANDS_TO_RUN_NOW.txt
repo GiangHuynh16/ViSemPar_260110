@@ -1,0 +1,85 @@
+==========================================
+✅ GRADIENT CHECKPOINTING FIX APPLIED
+==========================================
+
+The critical fix has been pushed to GitHub.
+Now use the new START_TRAINING_NOW.sh script.
+
+==========================================
+RUN THESE COMMANDS ON SERVER
+==========================================
+
+# 1. Pull latest code (includes the fix)
+cd /mnt/nghiepth/giangha/visempar/ViSemPar_new1
+git pull origin main
+
+# 2. Activate environment
+conda activate baseline_final
+
+# 3. Test the fix (optional but recommended)
+python test_bf16_forward.py
+
+# Expected output:
+#   Step 8: Testing backward pass...
+#   Gradient norm: 1.234567  ← Not NaN!
+#   ✅ SUCCESS: BF16 working correctly
+
+# 4. Start training with new script
+bash START_TRAINING_NOW.sh
+
+# This new script:
+#  - Doesn't have hardcoded batch_size checks
+#  - Shows your actual config
+#  - Verifies gradient checkpointing fix
+#  - Clears Python cache
+#  - Starts training
+
+
+==========================================
+CURRENT CONFIGURATION
+==========================================
+
+After gradient checkpointing fix, your config is:
+  Model: Qwen 2.5 7B
+  MAX_SEQ_LENGTH: 512
+  Batch size: 2
+  Gradient accumulation: 8
+  Effective batch: 16
+  BF16: True
+  Gradient checkpointing: Yes (AFTER LoRA now ✅)
+  Epochs: 15
+
+
+==========================================
+WHAT TO EXPECT
+==========================================
+
+Training should show:
+  {'loss': 8.92, 'grad_norm': 2.14, 'learning_rate': 0.000198}
+  {'loss': 8.71, 'grad_norm': 1.89, 'learning_rate': 0.000196}
+
+✅ Loss > 0 (not 0.0)
+✅ Grad norm > 0 (not NaN)
+✅ Learning rate > 0 (not 0.0)
+
+
+==========================================
+ALTERNATIVE: Use Conservative Config
+==========================================
+
+If you want to match MTUP exactly (seq_length=2048):
+
+# Edit config
+nano config/config.py
+
+# Change line 21:
+MAX_SEQ_LENGTH = 2048  # Up from 512
+
+# Then start training
+bash START_TRAINING_NOW.sh
+
+With the gradient checkpointing fix, A6000 48GB
+should handle seq=2048, batch=2 without OOM.
+
+
+==========================================
