@@ -47,10 +47,10 @@ CUDA_VERSION=118 make cuda11x
 echo "  ✓ Compilation complete"
 echo ""
 
-# Install
+# Install with pip to ensure metadata is created
 echo "Step 5: Installing compiled bitsandbytes..."
-python setup.py install
-echo "  ✓ Installed"
+pip install -e .
+echo "  ✓ Installed with metadata"
 echo ""
 
 # Verify
