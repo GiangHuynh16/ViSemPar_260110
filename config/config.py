@@ -41,15 +41,16 @@ LORA_CONFIG = {
 TRAINING_CONFIG = {
     "learning_rate": 2e-4,
     "num_train_epochs": 15,              # Same as MTUP
-    "per_device_train_batch_size": 1,    # Reduced to 1 (MTUP uses 2 but OOM here)
-    "gradient_accumulation_steps": 16,   # Increased to 16 to keep effective batch = 16
+    "per_device_train_batch_size": 2,    # Server has 48GB VRAM, can use 2 (same as MTUP)
+    "gradient_accumulation_steps": 8,    # Same as MTUP to keep effective batch = 16
     "warmup_steps": 100,                 # Same as MTUP
     "weight_decay": 0.01,
     "max_grad_norm": 1.0,
     "logging_steps": 10,
     "save_steps": 200,                   # Same as MTUP 7B
     "save_total_limit": 5,               # Same as MTUP 7B
-    "fp16": True,
+    "fp16": False,                       # CRITICAL: FP16 causes NaN loss with gradient checkpointing
+    "bf16": True,                        # Use BF16 instead - more stable with gradient checkpointing
     "optim": "adamw_torch",              # FIXED: Use standard AdamW (adamw_8bit requires bitsandbytes)
     "lr_scheduler_type": "cosine",
     "seed": 42,
