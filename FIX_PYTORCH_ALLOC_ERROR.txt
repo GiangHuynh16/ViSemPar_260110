@@ -1,0 +1,52 @@
+==========================================
+FIX FOR PYTORCH_CUDA_ALLOC_CONF ERROR
+==========================================
+
+Error:
+  RuntimeError: Unrecognized CachingAllocator option: expandable_segments
+
+Cause:
+  expandable_segments requires PyTorch >= 2.1
+  You have PyTorch 2.0.1
+
+Fix:
+  Removed expandable_segments from PYTORCH_CUDA_ALLOC_CONF
+
+
+==========================================
+RUN THIS ON SERVER NOW
+==========================================
+
+# Pull the fix
+cd /mnt/nghiepth/giangha/visempar/ViSemPar_new1
+git pull origin main
+
+# Start training
+bash START_TRAINING_NOW.sh
+
+
+==========================================
+ALTERNATIVE: Run Training Directly
+==========================================
+
+If you want to skip the script and run directly:
+
+# Pull fix
+git pull origin main
+
+# Clear cache
+find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
+# Set environment (without expandable_segments)
+export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
+export TOKENIZERS_PARALLELISM=false
+export OMP_NUM_THREADS=4
+
+# Activate environment
+conda activate baseline_final
+
+# Start training
+python train_baseline.py --epochs 15 --show-sample
+
+
+==========================================
