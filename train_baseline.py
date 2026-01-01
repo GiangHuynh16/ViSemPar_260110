@@ -410,8 +410,9 @@ def train_baseline_model(model, tokenizer, train_dataset, val_dataset, args):
         save_total_limit=TRAINING_CONFIG.get('save_total_limit', 5),
         load_best_model_at_end=TRAINING_CONFIG.get('load_best_model_at_end', True) if val_dataset else False,
         metric_for_best_model=TRAINING_CONFIG.get('metric_for_best_model', 'loss') if val_dataset else None,
-        fp16=torch.cuda.is_available(),
-        gradient_checkpointing=False,  # Disable for non-quantized mode (SAME AS MTUP)
+        fp16=TRAINING_CONFIG.get('fp16', False),
+        bf16=TRAINING_CONFIG.get('bf16', True),
+        gradient_checkpointing=False,  # Disabled - conflicts with PEFT LoRA
         optim=TRAINING_CONFIG.get('optim', 'adamw_torch'),
         lr_scheduler_type=TRAINING_CONFIG.get('lr_scheduler_type', 'cosine'),
         report_to=["tensorboard"],
