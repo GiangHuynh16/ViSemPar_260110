@@ -33,9 +33,9 @@ def calculate_smatch_subprocess(pred_file, gold_file):
     print()
 
     try:
-        # Call: python -m smatch pred_file gold_file
+        # Call: python -m smatch -f pred_file gold_file
         result = subprocess.run(
-            [sys.executable, '-m', 'smatch', pred_file, gold_file, '--significant', '4'],
+            [sys.executable, '-m', 'smatch', '-f', pred_file, gold_file, '--significant', '4'],
             capture_output=True,
             text=True,
             timeout=600  # 10 minutes timeout
