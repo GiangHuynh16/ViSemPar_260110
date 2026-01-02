@@ -1,51 +1,46 @@
 #!/bin/bash
-################################################################################
-# UNINSTALL BITSANDBYTES COMPLETELY
-# PEFT tries to import bitsandbytes even when not using quantization
-################################################################################
+# Uninstall bitsandbytes completely
+# We don't need it since we're not using quantization
 
-echo "========================================================================"
-echo "🗑️  UNINSTALLING BITSANDBYTES COMPLETELY"
-echo "========================================================================"
+set -e
+
+echo "==========================================="
+echo "UNINSTALL BITSANDBYTES"
+echo "==========================================="
 echo ""
 
 # Activate environment
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate lora_py310
+if [ -z "$CONDA_DEFAULT_ENV" ] || [ "$CONDA_DEFAULT_ENV" = "base" ]; then
+    echo "Activating baseline_final environment..."
+    eval "$(conda shell.bash hook)"
+    conda activate baseline_final
+fi
 
-echo "Uninstalling bitsandbytes..."
-pip uninstall -y bitsandbytes 2>/dev/null || true
-conda uninstall -y bitsandbytes 2>/dev/null || true
-
+echo "Environment: $CONDA_DEFAULT_ENV"
 echo ""
-echo "Verifying bitsandbytes is removed..."
-python3 << 'EOF'
+
+# Uninstall bitsandbytes
+echo "Removing bitsandbytes..."
+pip uninstall bitsandbytes -y 2>/dev/null || echo "  (not installed)"
+echo "  ✓ Removed"
+echo ""
+
+# Verify it's gone
+echo "Verifying removal..."
+python << 'PYEOF'
 try:
     import bitsandbytes
-    print("❌ bitsandbytes still installed")
+    print("  ⚠️  WARNING: bitsandbytes still installed!")
     exit(1)
 except ImportError:
-    print("✓ bitsandbytes successfully removed")
-    exit(0)
-EOF
+    print("  ✓ bitsandbytes successfully removed")
+PYEOF
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "========================================================================"
-    echo "✅ BITSANDBYTES UNINSTALLED"
-    echo "========================================================================"
-    echo ""
-    echo "Now you can run training with --no-quantize:"
-    echo "  bash RUN_TRAINING_MINIMAL.sh"
-    echo ""
-else
-    echo ""
-    echo "❌ Failed to remove bitsandbytes. Manual cleanup needed."
-    echo ""
-    echo "Try:"
-    echo "  pip list | grep bitsandbytes"
-    echo "  pip uninstall -y bitsandbytes"
-    echo "  conda list | grep bitsandbytes"
-    echo "  conda uninstall -y bitsandbytes"
-    exit 1
-fi
+echo ""
+echo "==========================================="
+echo "UNINSTALL COMPLETE"
+echo "==========================================="
+echo ""
+echo "Now start training:"
+echo "  bash START_TRAINING_NOW.sh"
+echo ""
