@@ -157,17 +157,35 @@ def calculate_smatch(pred_file, gold_file):
             errors = 0
 
             # Detect smatch API version
-            if hasattr(smatch, 'AMR'):
+            if hasattr(smatch, 'amr') and hasattr(smatch.amr, 'AMR'):
+                print("\n  Using smatch.amr.AMR API...")
+                parse_func = lambda s: smatch.amr.AMR.parse_AMR_line(s.replace('\n', ' '))
+                match_func = smatch.get_amr_match
+            elif hasattr(smatch, 'AMR'):
                 print("\n  Using smatch.AMR API...")
                 parse_func = lambda s: smatch.AMR.parse_AMR_line(s.replace('\n', ' '))
                 match_func = smatch.get_amr_match
-            elif hasattr(smatch, 'parse_amr_line'):
-                print("\n  Using new smatch API...")
-                parse_func = lambda s: smatch.parse_amr_line(s.replace('\n', ' '))
-                match_func = smatch.get_amr_match
+            elif hasattr(smatch, 'score_amr_pairs'):
+                print("\n  Using smatch.score_amr_pairs() API...")
+                # This API takes lists of AMR strings directly
+                # We'll handle this differently - calculate all at once
+                pred_amrs = [amr for _, amr in pred_pairs]
+                gold_amrs = [amr for _, amr in gold_pairs]
+
+                precision, recall, f1 = smatch.score_amr_pairs(pred_amrs, gold_amrs)
+
+                print(f"\n{'='*70}")
+                print("RESULTS")
+                print(f"{'='*70}")
+                print(f"Precision: {precision:.4f} ({precision*100:.2f}%)")
+                print(f"Recall:    {recall:.4f} ({recall*100:.2f}%)")
+                print(f"F1 Score:  {f1:.4f} ({f1*100:.2f}%)")
+                print(f"{'='*70}")
+
+                return {'precision': precision, 'recall': recall, 'f1': f1}
             else:
                 print("\n  ERROR: Cannot detect smatch API!")
-                print("  Available functions:", [a for a in dir(smatch) if not a.startswith('_')])
+                print("  Available attributes:", [a for a in dir(smatch) if not a.startswith('_')])
                 sys.exit(1)
 
             print("\n  Processing AMR pairs...")

@@ -70,15 +70,43 @@ def calculate_smatch_score(predictions_file, gold_file):
     print()
 
     # Detect smatch API version
-    if hasattr(smatch, 'AMR'):
+    if hasattr(smatch, 'score_amr_pairs'):
+        print("Using smatch.score_amr_pairs() API...")
+        print()
+
+        # This API takes lists of AMR strings directly
+        precision, recall, f1 = smatch.score_amr_pairs(predictions, gold)
+
+        print()
+        print("=" * 70)
+        print("RESULTS")
+        print("=" * 70)
+        print(f"Total examples: {len(predictions)}")
+        print()
+        print(f"Precision: {precision:.4f} ({precision*100:.2f}%)")
+        print(f"Recall:    {recall:.4f} ({recall*100:.2f}%)")
+        print(f"F1 (SMATCH): {f1:.4f} ({f1*100:.2f}%)")
+        print("=" * 70)
+
+        return {
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+            'total_match': 0,  # Not available in this API
+            'total_test': 0,
+            'total_gold': 0
+        }
+
+    # Fallback to manual calculation for older smatch versions
+    if hasattr(smatch, 'amr') and hasattr(smatch.amr, 'AMR'):
+        print("Using smatch.amr.AMR API...")
+        parse_func = lambda s: smatch.amr.AMR.parse_AMR_line(s)
+    elif hasattr(smatch, 'AMR'):
         print("Using smatch.AMR API...")
         parse_func = lambda s: smatch.AMR.parse_AMR_line(s)
-    elif hasattr(smatch, 'parse_amr_line'):
-        print("Using new smatch API...")
-        parse_func = smatch.parse_amr_line
     else:
         print("ERROR: Cannot detect smatch API!")
-        print("Available functions:", [a for a in dir(smatch) if not a.startswith('_')])
+        print("Available attributes:", [a for a in dir(smatch) if not a.startswith('_')])
         sys.exit(1)
 
     total_match = 0
