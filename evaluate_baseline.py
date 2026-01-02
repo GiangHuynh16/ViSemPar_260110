@@ -156,15 +156,29 @@ def calculate_smatch(pred_file, gold_file):
             total_gold = 0
             errors = 0
 
+            # Detect smatch API version
+            if hasattr(smatch, 'AMR'):
+                print("\n  Using smatch.AMR API...")
+                parse_func = lambda s: smatch.AMR.parse_AMR_line(s.replace('\n', ' '))
+                match_func = smatch.get_amr_match
+            elif hasattr(smatch, 'parse_amr_line'):
+                print("\n  Using new smatch API...")
+                parse_func = lambda s: smatch.parse_amr_line(s.replace('\n', ' '))
+                match_func = smatch.get_amr_match
+            else:
+                print("\n  ERROR: Cannot detect smatch API!")
+                print("  Available functions:", [a for a in dir(smatch) if not a.startswith('_')])
+                sys.exit(1)
+
             print("\n  Processing AMR pairs...")
             for i, ((_, pred_amr), (_, gold_amr)) in enumerate(zip(pred_pairs, gold_pairs)):
                 try:
-                    # Parse AMRs
-                    pred_amr_obj = smatch.AMR.parse_AMR_line(pred_amr.replace('\n', ' '))
-                    gold_amr_obj = smatch.AMR.parse_AMR_line(gold_amr.replace('\n', ' '))
+                    # Parse AMRs using detected API
+                    pred_amr_obj = parse_func(pred_amr)
+                    gold_amr_obj = parse_func(gold_amr)
 
                     # Get best match
-                    match_num, test_num, gold_num = smatch.get_amr_match(pred_amr_obj, gold_amr_obj)
+                    match_num, test_num, gold_num = match_func(pred_amr_obj, gold_amr_obj)
 
                     total_match += match_num
                     total_test += test_num

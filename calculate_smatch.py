@@ -69,6 +69,18 @@ def calculate_smatch_score(predictions_file, gold_file):
     print("(This may take a few minutes...)")
     print()
 
+    # Detect smatch API version
+    if hasattr(smatch, 'AMR'):
+        print("Using smatch.AMR API...")
+        parse_func = lambda s: smatch.AMR.parse_AMR_line(s)
+    elif hasattr(smatch, 'parse_amr_line'):
+        print("Using new smatch API...")
+        parse_func = smatch.parse_amr_line
+    else:
+        print("ERROR: Cannot detect smatch API!")
+        print("Available functions:", [a for a in dir(smatch) if not a.startswith('_')])
+        sys.exit(1)
+
     total_match = 0
     total_test = 0
     total_gold = 0
@@ -76,8 +88,8 @@ def calculate_smatch_score(predictions_file, gold_file):
     for i, (pred_amr, gold_amr) in enumerate(zip(predictions, gold)):
         # Parse AMR graphs
         try:
-            pred_graph = smatch.AMR.parse_AMR_line(pred_amr)
-            gold_graph = smatch.AMR.parse_AMR_line(gold_amr)
+            pred_graph = parse_func(pred_amr)
+            gold_graph = parse_func(gold_amr)
 
             # Calculate match
             best_match_num, test_triple_num, gold_triple_num = smatch.get_amr_match(
