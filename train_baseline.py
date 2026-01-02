@@ -232,22 +232,16 @@ def setup_model_and_tokenizer(args):
     from transformers import (
         AutoModelForCausalLM,
         AutoTokenizer,
-        BitsAndBytesConfig
     )
-    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-    from config import MODEL_NAME, LORA_CONFIG, USE_4BIT_QUANTIZATION
+    from peft import LoraConfig, get_peft_model
+    from config import MODEL_NAME, LORA_CONFIG
 
     logger.info("\n" + "=" * 70)
     logger.info("STEP 2: LOADING MODEL AND TOKENIZER")
     logger.info("=" * 70)
 
     logger.info(f"Model: {MODEL_NAME}")
-
-    # Quantization disabled (same as MTUP 7B)
-    use_quantization = USE_4BIT_QUANTIZATION and not args.no_quantize
-    if args.no_quantize:
-        logger.warning("⚠️  Quantization DISABLED by --no-quantize flag")
-    logger.info(f"Using 4-bit quantization: {use_quantization}")
+    logger.info("Quantization: DISABLED (server has CUDA 12.6, PyTorch needs CUDA 11.8)")
 
     # Load tokenizer
     logger.info("\nLoading tokenizer...")
@@ -263,76 +257,25 @@ def setup_model_and_tokenizer(args):
 
     logger.info(f"✓ Tokenizer loaded (vocab size: {len(tokenizer)})")
 
-    # Setup quantization config
-    quantization_config = None
-    if use_quantization and torch.cuda.is_available():
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True
-        )
-        logger.info("✓ 4-bit quantization config created")
-
     # Load model
     logger.info("\nLoading model...")
+    logger.info("Memory strategy: BF16 + gradient checkpointing + LoRA r=64")
 
-    # CRITICAL FIX: device_map + gradient_checkpointing causes "expected device meta but got cuda:0" error
-    # Solution: Load model DIRECTLY on GPU without device_map, use gradient checkpointing instead
-    #
-    # Memory strategy:
-    # - Load full model in FP16: ~14GB
-    # - LoRA adapters: ~0.5GB
-    # - Gradient checkpointing: saves activation memory
-    # - batch_size=1, seq=512: minimal activation footprint
-    # Total: Should fit in 24GB VRAM
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_NAME,
+        device_map=None,  # Load directly to GPU
+        trust_remote_code=True,
+        torch_dtype=torch.bfloat16  # Use BF16 for stability with gradient checkpointing
+    )
 
-    if not use_quantization and torch.cuda.is_available():
-        logger.info("⚠️  Loading model DIRECTLY on GPU (no device_map, no CPU offload)")
-        logger.info("   Memory strategy: FP16 + gradient checkpointing + batch_size=1")
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME,
-            quantization_config=None,
-            device_map=None,  # DISABLED - load to GPU directly
-            trust_remote_code=True,
-            torch_dtype=torch.float16
-        )
-        # Move to GPU explicitly
-        model = model.to("cuda:0")
-        logger.info(f"✓ Model loaded on GPU: {torch.cuda.memory_allocated(0) / 1024**3:.2f} GB allocated")
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME,
-            quantization_config=quantization_config if use_quantization else None,
-            device_map="auto" if torch.cuda.is_available() else None,
-            trust_remote_code=True,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
-        )
-        logger.info(f"✓ Model loaded")
+    # Move to GPU explicitly
+    model = model.to("cuda:0")
+    logger.info(f"✓ Model loaded on GPU: {torch.cuda.memory_allocated(0) / 1024**3:.2f} GB allocated")
 
-    # NOTE: gradient_checkpointing_enable() must be called AFTER LoRA is applied
-    # Otherwise LoRA parameters won't have proper gradient tracking
-
-    # Prepare model for LoRA training
-    # For non-quantized models, we need to:
-    # 1. Cast layer norms to fp32 for stability
-    # 2. Freeze base model parameters (only train LoRA)
-    if not use_quantization:
-        # Cast LayerNorm to fp32 for training stability
-        for name, module in model.named_modules():
-            if "norm" in name.lower() or isinstance(module, torch.nn.LayerNorm):
-                module = module.to(torch.float32)
-        logger.info("✓ Cast LayerNorm modules to fp32 for stability")
-
-        # Freeze all base model parameters
-        for param in model.parameters():
-            param.requires_grad = False
-        logger.info("✓ Froze base model parameters (will unfreeze LoRA params after applying LoRA)")
-
-    # Prepare for k-bit training if quantized
-    if use_quantization and torch.cuda.is_available():
-        model = prepare_model_for_kbit_training(model)
-        logger.info("✓ Model prepared for k-bit training")
+    # Freeze all base model parameters (only train LoRA)
+    for param in model.parameters():
+        param.requires_grad = False
+    logger.info("✓ Froze base model parameters")
 
     # Setup LoRA
     logger.info("\nApplying LoRA...")
@@ -350,20 +293,19 @@ def setup_model_and_tokenizer(args):
     logger.info("✓ LoRA applied")
 
     # CRITICAL: Enable gradient checkpointing AFTER LoRA is applied
-    # Must use enable_input_require_grads() for PEFT compatibility
-    if not use_quantization:
-        model.enable_input_require_grads()
-        model.base_model.model.gradient_checkpointing_enable()
-        logger.info("✓ Gradient checkpointing enabled (AFTER LoRA)")
+    # Use PEFT's helper method for compatibility
+    model.enable_input_require_grads()
 
-    # Verify LoRA parameters have gradients enabled
-    lora_params_count = sum(1 for name, param in model.named_parameters() if param.requires_grad and 'lora_' in name)
-    if lora_params_count == 0:
-        logger.warning("⚠️  No LoRA parameters have requires_grad=True! Manually enabling...")
-        for name, param in model.named_parameters():
-            if 'lora_' in name:
-                param.requires_grad = True
-    logger.info(f"✓ LoRA parameters with gradients: {lora_params_count}")
+    # Enable gradient checkpointing on the base model
+    if hasattr(model, 'base_model'):
+        if hasattr(model.base_model, 'model'):
+            model.base_model.model.gradient_checkpointing_enable()
+        else:
+            model.base_model.gradient_checkpointing_enable()
+    else:
+        model.gradient_checkpointing_enable()
+
+    logger.info("✓ Gradient checkpointing enabled (AFTER LoRA)")
 
     # Set model to training mode
     model.train()
@@ -508,8 +450,7 @@ def main():
     parser.add_argument('--val-split', type=float, default=0.1, help="Validation split ratio (default: 0.1)")
 
     # Model parameters
-    parser.add_argument('--no-quantize', action='store_true', help="Disable 4-bit quantization")
-    parser.add_argument('--max-seq-length', type=int, default=2048, help="Maximum sequence length")
+    parser.add_argument('--max-seq-length', type=int, default=256, help="Maximum sequence length")
 
     # Logging
     parser.add_argument('--log-steps', type=int, help="Logging frequency")
