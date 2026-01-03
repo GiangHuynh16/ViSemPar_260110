@@ -24,7 +24,37 @@ if [ -z "$LATEST_MODEL" ]; then
     exit 1
 fi
 
-echo "Found model: outputs/$LATEST_MODEL"
+echo "Found model directory: outputs/$LATEST_MODEL"
+echo ""
+
+# Find best checkpoint (use final/ if exists, otherwise latest checkpoint-XXXX/)
+MODEL_PATH=""
+
+if [ -d "outputs/$LATEST_MODEL/final" ]; then
+    # Check if final has adapter_config.json
+    if [ -f "outputs/$LATEST_MODEL/final/adapter_config.json" ]; then
+        MODEL_PATH="outputs/$LATEST_MODEL/final"
+        echo "Using final model"
+    fi
+fi
+
+# If no final or final is incomplete, use latest checkpoint
+if [ -z "$MODEL_PATH" ]; then
+    LATEST_CHECKPOINT=$(ls -t "outputs/$LATEST_MODEL" | grep checkpoint | head -1)
+
+    if [ -z "$LATEST_CHECKPOINT" ]; then
+        echo "❌ No checkpoint found in outputs/$LATEST_MODEL"
+        echo ""
+        echo "Directory contents:"
+        ls -la "outputs/$LATEST_MODEL"
+        exit 1
+    fi
+
+    MODEL_PATH="outputs/$LATEST_MODEL/$LATEST_CHECKPOINT"
+    echo "Using checkpoint: $LATEST_CHECKPOINT"
+fi
+
+echo "Model path: $MODEL_PATH"
 echo ""
 
 # Create output directory
@@ -35,7 +65,7 @@ echo ""
 
 # Run prediction
 python predict_baseline_fixed.py \
-    --model "outputs/$LATEST_MODEL/final" \
+    --model "$MODEL_PATH" \
     --test-file data/public_test.txt \
     --output evaluation_results/baseline_7b_fixed/predictions.txt
 
