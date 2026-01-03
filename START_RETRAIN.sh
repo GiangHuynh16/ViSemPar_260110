@@ -12,7 +12,7 @@ cd /mnt/nghiepth/giangha/visempar/ViSemPar_new1
 
 echo "Step 1: Activate conda environment"
 echo "=========================================="
-source ~/miniconda3/etc/profile.d/conda.sh
+source ~/anaconda3/etc/profile.d/conda.sh
 conda activate baseline_final
 
 echo "✓ Conda environment activated: baseline_final"

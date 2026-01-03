@@ -10,7 +10,7 @@ echo ""
 cd /mnt/nghiepth/giangha/visempar/ViSemPar_new1
 
 # Activate conda
-source ~/miniconda3/etc/profile.d/conda.sh
+source ~/anaconda3/etc/profile.d/conda.sh
 conda activate baseline_final
 
 # Find latest trained model

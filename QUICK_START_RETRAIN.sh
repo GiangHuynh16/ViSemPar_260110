@@ -55,7 +55,7 @@ echo ""
 echo "Activating conda environment: baseline_final"
 
 # Activate conda
-source ~/miniconda3/etc/profile.d/conda.sh
+source ~/anaconda3/etc/profile.d/conda.sh
 conda activate baseline_final
 
 echo ""
