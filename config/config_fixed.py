@@ -52,7 +52,7 @@ TRAINING_CONFIG = {
     "optim": "adamw_torch",
     "lr_scheduler_type": "cosine",
     "seed": 42,
-    "load_best_model_at_end": True,
+    "load_best_model_at_end": False,  # Disabled: peft version incompatibility
     "metric_for_best_model": "loss",
     "gradient_checkpointing": False,  # CRITICAL: Disable for LoRA compatibility
 }
