@@ -94,13 +94,24 @@ else:
 
 echo ""
 echo "=========================================="
-echo "Compare with old model:"
+echo "VALIDATE OUTPUT FORMAT"
+echo "=========================================="
+echo ""
+echo "Checking UTF-8 encoding and Vietnamese format..."
+python validate_vietnamese_output.py \
+    --file evaluation_results/baseline_7b_fixed/predictions.txt
+
+echo ""
+echo "=========================================="
+echo "COMPARE WITH OLD MODEL"
+echo "=========================================="
 echo ""
 echo "OLD (buggy):"
 echo "  - 124/150 valid AMRs (82.7%)"
 echo "  - 26 parse errors (17.3%)"
+echo "  - Cannot calculate SMATCH"
 echo ""
 echo "NEW (fixed):"
 wc -l evaluation_results/baseline_7b_fixed/predictions.txt 2>/dev/null | awk '{print "  - " int($1/3) " AMRs generated"}'
-echo "  - Check quality output above"
+echo "  - See validation output above"
 echo ""
