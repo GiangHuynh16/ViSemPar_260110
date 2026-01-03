@@ -18,20 +18,24 @@ sys.path.insert(0, str(Path(__file__).parent / 'config'))
 
 
 def load_model_and_tokenizer(model_path: str):
-    """Load fine-tuned model and tokenizer"""
+    """Load fine-tuned LoRA model and tokenizer"""
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from peft import PeftModel
+    from pathlib import Path
 
     print("=" * 70)
     print("LOADING MODEL")
     print("=" * 70)
-    print(f"Model path: {model_path}")
+    print(f"Checkpoint path: {model_path}")
     print()
 
-    # Load tokenizer
-    print("Loading tokenizer...")
+    # Base model name
+    BASE_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+
+    # Load tokenizer from base model (not saved in checkpoint)
+    print(f"Loading tokenizer from base model: {BASE_MODEL}")
     tokenizer = AutoTokenizer.from_pretrained(
-        model_path,
+        BASE_MODEL,
         trust_remote_code=True,
         use_fast=True
     )
@@ -42,18 +46,22 @@ def load_model_and_tokenizer(model_path: str):
     print(f"✓ Tokenizer loaded")
     print(f"  EOS token: '{tokenizer.eos_token}' (ID: {tokenizer.eos_token_id})")
 
-    # Load model
-    print("\nLoading model...")
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path,
+    # Load base model
+    print(f"\nLoading base model: {BASE_MODEL}")
+    base_model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=True,
     )
 
+    # Load LoRA adapter from checkpoint
+    print(f"\nLoading LoRA adapter from: {model_path}")
+    model = PeftModel.from_pretrained(base_model, model_path)
+
     model.eval()
 
-    print(f"✓ Model loaded")
+    print(f"✓ Model loaded (base + LoRA adapter)")
     print("=" * 70)
     print()
 
