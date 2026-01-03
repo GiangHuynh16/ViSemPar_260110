@@ -315,16 +315,21 @@ def setup_model_and_tokenizer(args):
 
     model = get_peft_model(model, lora_config)
 
-    # CRITICAL: Enable gradient checkpointing BEFORE counting params
-    # This ensures LoRA params are properly set up
-    if hasattr(model.base_model, 'gradient_checkpointing_enable'):
-        model.base_model.gradient_checkpointing_enable()
-        logger.info("✓ Gradient checkpointing enabled")
+    # CRITICAL: Set model to training mode FIRST
+    model.train()
 
     # Make sure LoRA parameters require gradients
     for name, param in model.named_parameters():
         if 'lora' in name.lower():
             param.requires_grad = True
+
+    # CRITICAL: Enable gradient checkpointing AFTER setting requires_grad
+    if hasattr(model, 'gradient_checkpointing_enable'):
+        model.gradient_checkpointing_enable()
+        logger.info("✓ Gradient checkpointing enabled")
+    elif hasattr(model.base_model, 'gradient_checkpointing_enable'):
+        model.base_model.gradient_checkpointing_enable()
+        logger.info("✓ Gradient checkpointing enabled (via base_model)")
 
     # Count trainable parameters (compatible with all peft versions)
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
