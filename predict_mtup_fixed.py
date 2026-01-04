@@ -235,17 +235,46 @@ class MTUPPredictor:
 
         return amr_with_vars
 
-    def predict_batch(self, sentences: List[str], verbose: bool = False) -> List[str]:
-        """Predict for multiple sentences"""
+    def predict_batch(self, sentences: List[str], verbose: bool = False,
+                      checkpoint_file: str = None, save_interval: int = 10) -> List[str]:
+        """
+        Predict for multiple sentences with checkpointing
+
+        Args:
+            sentences: List of sentences to process
+            verbose: Print progress
+            checkpoint_file: Save intermediate results to this file
+            save_interval: Save checkpoint every N predictions
+        """
         results = []
         for i, sentence in enumerate(sentences, 1):
-            if verbose:
+            if verbose or (i % 10 == 0):
                 logger.info(f"\n{'=' * 80}")
-                logger.info(f"Processing {i}/{len(sentences)}")
+                logger.info(f"Processing {i}/{len(sentences)}: {sentence[:50]}...")
                 logger.info(f"{'=' * 80}")
 
-            result = self.predict(sentence, verbose=verbose)
-            results.append(result)
+            try:
+                result = self.predict(sentence, verbose=verbose)
+                results.append(result)
+
+                # Save checkpoint periodically
+                if checkpoint_file and (i % save_interval == 0 or i == len(sentences)):
+                    logger.info(f"💾 Saving checkpoint at {i}/{len(sentences)}...")
+                    Path(checkpoint_file).parent.mkdir(parents=True, exist_ok=True)
+                    with open(checkpoint_file, 'w', encoding='utf-8') as f:
+                        f.write('\n\n'.join(results))
+                    logger.info(f"✅ Checkpoint saved ({len(results)} predictions)")
+
+            except Exception as e:
+                logger.error(f"❌ Error processing sentence {i}: {e}")
+                logger.error(f"   Sentence: {sentence}")
+                # Add empty placeholder to maintain alignment
+                results.append("(error / processing)")
+
+                # Still save checkpoint on error
+                if checkpoint_file:
+                    with open(checkpoint_file, 'w', encoding='utf-8') as f:
+                        f.write('\n\n'.join(results))
 
         return results
 
@@ -296,9 +325,15 @@ def main():
 
     logger.info(f"Total sentences: {len(sentences)}")
 
-    # Predict
+    # Predict with checkpointing
     logger.info("Starting prediction...")
-    predictions = predictor.predict_batch(sentences, verbose=args.verbose)
+    logger.info(f"Checkpointing enabled: saving every 10 predictions to {args.output}")
+    predictions = predictor.predict_batch(
+        sentences,
+        verbose=args.verbose,
+        checkpoint_file=args.output,
+        save_interval=10
+    )
 
     # Validate
     valid_count = 0
