@@ -94,7 +94,7 @@ MTUP_CONFIG = {
 # ==============================================================================
 
 DATA_CONFIG = {
-    "train_files": ["train_amr_1.txt", "train_amr_2.txt"],
+    "train_files": ["train_amr_mtup_preprocessed.txt"],  # MTUP preprocessed format
     "public_test_file": "public_test.txt",
     "public_test_ground_truth": "public_test_ground_truth.txt",
     "validation_split": 0.05,         # 5% like baseline

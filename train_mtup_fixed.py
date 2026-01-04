@@ -104,11 +104,16 @@ class MTUPDataset:
         self.max_length = config.MAX_SEQ_LENGTH
 
     def load_data(self, file_paths: List[str]) -> List[Dict]:
-        """Load and preprocess AMR data"""
+        """Load and preprocess MTUP format data"""
         examples = []
 
         for file_path in file_paths:
-            full_path = config.DATA_DIR / file_path
+            # Handle both absolute and relative paths
+            if isinstance(file_path, str) and file_path.startswith('/'):
+                full_path = Path(file_path)
+            else:
+                full_path = config.DATA_DIR / file_path
+
             logger.info(f"Loading: {full_path}")
 
             with open(full_path, 'r', encoding='utf-8') as f:
@@ -118,27 +123,46 @@ class MTUPDataset:
             pairs = content.strip().split('\n\n')
 
             for pair in pairs:
-                lines = pair.strip().split('\n')
-                if len(lines) < 2:
+                lines = [l.strip() for l in pair.strip().split('\n') if l.strip()]
+                if len(lines) < 3:
                     continue
 
-                # Parse sentence and AMR
-                sentence_line = lines[0]
-                amr_lines = lines[1:]
+                # Parse MTUP format:
+                # Line 0: #::snt Sentence
+                # Line 1: #::amr-no-vars AMR without variables
+                # Line 2: #::amr-with-vars
+                # Lines 3+: AMR with variables (Penman format)
 
-                # Extract sentence
-                if sentence_line.startswith('#::snt'):
-                    sentence = sentence_line.replace('#::snt', '').strip()
-                else:
-                    sentence = sentence_line.strip()
+                sentence = None
+                amr_no_vars = None
+                amr_with_vars_lines = []
+                reading_amr = False
 
-                # Extract AMR
-                amr = '\n'.join(amr_lines).strip()
+                for line in lines:
+                    if line.startswith('#::snt'):
+                        sentence = line.replace('#::snt', '').strip()
+                    elif line.startswith('#::amr-no-vars'):
+                        # AMR no vars can span multiple lines, extract rest of line
+                        amr_no_vars_part = line.replace('#::amr-no-vars', '').strip()
+                        # Collect continuation lines
+                        idx = lines.index(line)
+                        amr_no_vars_lines = [amr_no_vars_part]
+                        for next_line in lines[idx+1:]:
+                            if next_line.startswith('#::'):
+                                break
+                            amr_no_vars_lines.append(next_line)
+                        amr_no_vars = '\n'.join(amr_no_vars_lines).strip()
+                    elif line.startswith('#::amr-with-vars'):
+                        reading_amr = True
+                    elif reading_amr:
+                        amr_with_vars_lines.append(line)
 
-                if sentence and amr:
+                if sentence and amr_no_vars and amr_with_vars_lines:
+                    amr_with_vars = '\n'.join(amr_with_vars_lines).strip()
                     examples.append({
                         'sentence': sentence,
-                        'amr_with_vars': amr
+                        'amr_no_vars': amr_no_vars,
+                        'amr_with_vars': amr_with_vars
                     })
 
         logger.info(f"Loaded {len(examples)} examples")

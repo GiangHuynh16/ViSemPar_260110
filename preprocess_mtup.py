@@ -55,7 +55,7 @@ def validate_amr(amr: str) -> Tuple[bool, str]:
 def parse_training_file(file_path: str) -> list:
     """
     Parse training file with format:
-        # ::snt Sentence text
+        #::snt Sentence text
         (AMR graph)
 
     Returns:
@@ -75,11 +75,15 @@ def parse_training_file(file_path: str) -> list:
             i += 1
             continue
 
-        # Look for sentence marker
-        if line.startswith('# ::snt'):
-            sentence = line.replace('# ::snt', '').strip()
+        # Look for sentence marker (handle both #::snt and # ::snt)
+        if line.startswith('#::snt') or line.startswith('# ::snt'):
+            # Remove marker (try both formats)
+            if line.startswith('#::snt'):
+                sentence = line.replace('#::snt', '').strip()
+            else:
+                sentence = line.replace('# ::snt', '').strip()
 
-            # Collect AMR lines (until next # ::snt or empty line)
+            # Collect AMR lines (until next #::snt or empty line)
             amr_lines = []
             i += 1
 
@@ -87,7 +91,7 @@ def parse_training_file(file_path: str) -> list:
                 amr_line = lines[i].strip()
 
                 # Stop at next sentence or empty line
-                if not amr_line or amr_line.startswith('# ::'):
+                if not amr_line or amr_line.startswith('#::'):
                     break
 
                 amr_lines.append(amr_line)
@@ -134,14 +138,14 @@ def format_mtup_output(example: dict) -> str:
     Format MTUP example for output file
 
     Format:
-        # ::snt Sentence
-        # ::amr-no-vars AMR without variables
-        # ::amr-with-vars AMR with variables (Penman)
+        #::snt Sentence
+        #::amr-no-vars AMR without variables
+        #::amr-with-vars
         (full Penman AMR)
     """
-    output = f"# ::snt {example['sentence']}\n"
-    output += f"# ::amr-no-vars {example['amr_no_vars']}\n"
-    output += f"# ::amr-with-vars\n"
+    output = f"#::snt {example['sentence']}\n"
+    output += f"#::amr-no-vars {example['amr_no_vars']}\n"
+    output += f"#::amr-with-vars\n"
     output += example['amr_with_vars']
 
     return output
