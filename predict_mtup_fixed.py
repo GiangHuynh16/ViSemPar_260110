@@ -168,12 +168,15 @@ class MTUPPredictor:
 
         return amr_no_vars
 
-    def generate_step2(self, amr_no_vars: str) -> str:
+    def generate_step2(self, sentence: str, amr_no_vars: str) -> str:
         """
         Step 2: Add variables to AMR
         """
         # Build prompt for Step 2
-        prompt = MTUP_INFERENCE_STEP2_TEMPLATE.format(amr_no_vars=amr_no_vars)
+        prompt = MTUP_INFERENCE_STEP2_TEMPLATE.format(
+            sentence=sentence,
+            amr_no_vars=amr_no_vars
+        )
 
         # Tokenize
         inputs = self.tokenizer(
@@ -225,7 +228,7 @@ class MTUPPredictor:
             logger.info(f"Step 1 (no vars): {amr_no_vars}")
 
         # Step 2: Add variables
-        amr_with_vars = self.generate_step2(amr_no_vars)
+        amr_with_vars = self.generate_step2(sentence, amr_no_vars)
 
         if verbose:
             logger.info(f"Step 2 (with vars):\n{amr_with_vars}")
