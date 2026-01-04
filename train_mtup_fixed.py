@@ -337,8 +337,15 @@ def main():
     train_data = train_examples[:split_idx]
     val_data = train_examples[split_idx:]
 
-    logger.info(f"Train examples: {len(train_data)}")
-    logger.info(f"Validation examples: {len(val_data)}")
+    logger.info("=" * 80)
+    logger.info("DATASET SPLIT INFO")
+    logger.info("=" * 80)
+    logger.info(f"Total examples loaded: {len(train_examples)}")
+    logger.info(f"Validation split: {val_split} ({val_split*100}%)")
+    logger.info(f"Split index: {split_idx}")
+    logger.info(f"Train examples: {len(train_data)} ({len(train_data)/len(train_examples)*100:.1f}%)")
+    logger.info(f"Validation examples: {len(val_data)} ({len(val_data)/len(train_examples)*100:.1f}%)")
+    logger.info("=" * 80)
 
     # Prepare datasets
     train_dataset = dataset_handler.prepare_dataset(train_data)
