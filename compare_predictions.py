@@ -11,9 +11,24 @@ def load_amrs(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Split by double newline
-    amrs = [amr.strip() for amr in content.strip().split('\n\n') if amr.strip()]
-    return amrs
+    # Check if file has #::snt markers (ground truth format)
+    if '#::snt' in content:
+        # Parse format: #::snt sentence\n(amr...)\n\n
+        amrs = []
+        examples = content.strip().split('\n\n')
+        for example in examples:
+            if not example.strip():
+                continue
+            # Remove #::snt line
+            lines = example.split('\n')
+            amr_lines = [l for l in lines if not l.startswith('#::snt')]
+            if amr_lines:
+                amrs.append('\n'.join(amr_lines).strip())
+        return amrs
+    else:
+        # Plain AMR format (predictions)
+        amrs = [amr.strip() for amr in content.strip().split('\n\n') if amr.strip()]
+        return amrs
 
 
 def analyze_amr(amr):
