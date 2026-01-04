@@ -61,28 +61,43 @@ AMR chuẩn PENMAN:
 
 
 # ==============================================================================
-# INFERENCE-ONLY TEMPLATE (NO EXAMPLES IN VARS)
-# Used during inference when we don't have ground truth
+# INFERENCE-ONLY TEMPLATES - MATCHING TRAINING FORMAT
+# CRITICAL: Must match MTUP_ULTRA_MINIMAL format for correct inference
 # ==============================================================================
 
-MTUP_INFERENCE_TEMPLATE = """Chuyển câu tiếng Việt sau sang AMR theo chuẩn PENMAN trong 2 bước.
+# Step 1: Generate AMR without variables
+MTUP_INFERENCE_TEMPLATE = """Chuyển câu tiếng Việt sau sang AMR theo chuẩn PENMAN.
 
-Bước 1: Tạo cấu trúc AMR không có biến (chỉ khái niệm và quan hệ).
-Bước 2: Gán biến cho mỗi khái niệm theo chuẩn PENMAN: (biến / khái_niệm ...).
+VÍ DỤ:
+Câu: Anh ấy đã hoàn thành công việc.
+AMR không biến: (hoàn_thành :agent (anh) :theme (công_việc) :aspect (đã))
+
+---
 
 Câu: {sentence}
 
-Bước 1 - AMR không biến:
-"""
+AMR không biến:"""
 
-# For step 2 inference
-MTUP_INFERENCE_STEP2_TEMPLATE = """Gán biến vào AMR theo chuẩn PENMAN.
+# Step 2: Add variables to AMR
+MTUP_INFERENCE_STEP2_TEMPLATE = """Chuyển câu tiếng Việt sau sang AMR theo chuẩn PENMAN.
+
+VÍ DỤ:
+Câu: Anh ấy đã hoàn thành công việc.
+AMR không biến: (hoàn_thành :agent (anh) :theme (công_việc) :aspect (đã))
+AMR chuẩn PENMAN:
+(h / hoàn_thành
+    :agent (a / anh)
+    :theme (c / công_việc)
+    :aspect (đ / đã))
+
+---
+
+Câu: {sentence}
 
 AMR không biến:
 {amr_no_vars}
 
-AMR chuẩn PENMAN:
-"""
+AMR chuẩn PENMAN:"""
 
 
 # ==============================================================================
