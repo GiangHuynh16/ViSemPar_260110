@@ -88,9 +88,8 @@ class MTUPPredictor:
 
         result = '\n'.join(amr_lines).strip()
 
-        # Clean up
-        result = result.split('\n')[0] if result else ""  # Take first line only
-        return result.strip()
+        # Return full AMR (can be multi-line)
+        return result
 
     def extract_amr_step2(self, generated_text: str) -> str:
         """

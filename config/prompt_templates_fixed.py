@@ -17,11 +17,11 @@ Bước 1 - AMR không biến:
 
 Bước 2 - AMR có biến (chuẩn PENMAN):
 (n / nhớ
-    :pivot (t / tôi)
-    :theme (l / lời
-        :poss (c / chủ_tịch
-            :mod (a / anh)
-            :mod (x / xã))))
+:pivot (t / tôi)
+:theme (l / lời
+:poss (c / chủ_tịch
+:mod (a / anh)
+:mod (x / xã))))
 
 ---
 
@@ -41,13 +41,12 @@ Bước 2 - AMR có biến (chuẩn PENMAN):
 MTUP_ULTRA_MINIMAL = """Chuyển câu tiếng Việt sau sang AMR theo chuẩn PENMAN.
 
 VÍ DỤ:
-Câu: Anh ấy đã hoàn thành công việc.
-AMR không biến: (hoàn_thành :agent (anh) :theme (công_việc) :aspect (đã))
+Câu: Bi kịch là ở chỗ đó !
+AMR không biến: (bi_kịch :domain (chỗ :mod (đó)))
 AMR chuẩn PENMAN:
-(h / hoàn_thành
-    :agent (a / anh)
-    :theme (c / công_việc)
-    :aspect (đ / đã))
+(b / bi_kịch
+:domain(c / chỗ
+:mod(đ / đó)))
 
 ---
 
@@ -69,8 +68,8 @@ AMR chuẩn PENMAN:
 MTUP_INFERENCE_TEMPLATE = """Chuyển câu tiếng Việt sau sang AMR theo chuẩn PENMAN.
 
 VÍ DỤ:
-Câu: Anh ấy đã hoàn thành công việc.
-AMR không biến: (hoàn_thành :agent (anh) :theme (công_việc) :aspect (đã))
+Câu: Bi kịch là ở chỗ đó !
+AMR không biến: (bi_kịch :domain (chỗ :mod (đó)))
 
 ---
 
@@ -82,13 +81,12 @@ AMR không biến:"""
 MTUP_INFERENCE_STEP2_TEMPLATE = """Chuyển câu tiếng Việt sau sang AMR theo chuẩn PENMAN.
 
 VÍ DỤ:
-Câu: Anh ấy đã hoàn thành công việc.
-AMR không biến: (hoàn_thành :agent (anh) :theme (công_việc) :aspect (đã))
+Câu: Bi kịch là ở chỗ đó !
+AMR không biến: (bi_kịch :domain (chỗ :mod (đó)))
 AMR chuẩn PENMAN:
-(h / hoàn_thành
-    :agent (a / anh)
-    :theme (c / công_việc)
-    :aspect (đ / đã))
+(b / bi_kịch
+:domain(c / chỗ
+:mod(đ / đó)))
 
 ---
 
@@ -205,10 +203,10 @@ if __name__ == "__main__":
     sentence = "Tôi đã hoàn thành công việc quan trọng."
     amr_no_vars = "(hoàn_thành :agent (tôi) :theme (công_việc :mod (quan_trọng)) :aspect (đã))"
     amr_with_vars = """(h / hoàn_thành
-    :agent (t / tôi)
-    :theme (c / công_việc
-        :mod (q / quan_trọng))
-    :aspect (đ / đã))"""
+:agent(t / tôi)
+:theme(c / công_việc
+:mod(q / quan_trọng))
+:aspect(đ / đã))"""
 
     print("=" * 80)
     print("MTUP FIXED - MINIMAL TEMPLATE TEST")
