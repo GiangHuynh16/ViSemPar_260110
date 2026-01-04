@@ -119,46 +119,54 @@ class MTUPDataset:
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
 
-            # Split by double newline
+            # Split by double newline to get individual examples
             pairs = content.strip().split('\n\n')
 
+            logger.info(f"Found {len(pairs)} potential examples in file")
+
             for pair in pairs:
-                lines = [l.strip() for l in pair.strip().split('\n') if l.strip()]
-                if len(lines) < 3:
+                if not pair.strip():
                     continue
 
-                # Parse MTUP format:
+                lines = pair.strip().split('\n')
+
+                # MTUP format:
                 # Line 0: #::snt Sentence
-                # Line 1: #::amr-no-vars AMR without variables
-                # Line 2: #::amr-with-vars
-                # Lines 3+: AMR with variables (Penman format)
+                # Line 1: #::amr-no-vars AMR without variables (can be multi-line)
+                # Line N: #::amr-with-vars
+                # Lines N+1 onwards: AMR with variables (Penman format)
 
                 sentence = None
-                amr_no_vars = None
+                amr_no_vars_lines = []
                 amr_with_vars_lines = []
-                reading_amr = False
+                state = 'looking_for_snt'  # States: looking_for_snt, reading_no_vars, reading_with_vars
 
                 for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+
                     if line.startswith('#::snt'):
                         sentence = line.replace('#::snt', '').strip()
+                        state = 'reading_no_vars'
                     elif line.startswith('#::amr-no-vars'):
-                        # AMR no vars can span multiple lines, extract rest of line
-                        amr_no_vars_part = line.replace('#::amr-no-vars', '').strip()
-                        # Collect continuation lines
-                        idx = lines.index(line)
-                        amr_no_vars_lines = [amr_no_vars_part]
-                        for next_line in lines[idx+1:]:
-                            if next_line.startswith('#::'):
-                                break
-                            amr_no_vars_lines.append(next_line)
-                        amr_no_vars = '\n'.join(amr_no_vars_lines).strip()
+                        # Extract the AMR part after the marker
+                        amr_part = line.replace('#::amr-no-vars', '').strip()
+                        if amr_part:
+                            amr_no_vars_lines.append(amr_part)
+                        state = 'reading_no_vars'
                     elif line.startswith('#::amr-with-vars'):
-                        reading_amr = True
-                    elif reading_amr:
+                        state = 'reading_with_vars'
+                    elif state == 'reading_no_vars':
+                        amr_no_vars_lines.append(line)
+                    elif state == 'reading_with_vars':
                         amr_with_vars_lines.append(line)
 
-                if sentence and amr_no_vars and amr_with_vars_lines:
-                    amr_with_vars = '\n'.join(amr_with_vars_lines).strip()
+                # Build AMRs from collected lines
+                amr_no_vars = '\n'.join(amr_no_vars_lines).strip()
+                amr_with_vars = '\n'.join(amr_with_vars_lines).strip()
+
+                if sentence and amr_no_vars and amr_with_vars:
                     examples.append({
                         'sentence': sentence,
                         'amr_no_vars': amr_no_vars,
