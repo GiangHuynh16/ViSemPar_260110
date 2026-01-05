@@ -8,12 +8,13 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     Trainer,
-    DataCollatorForSeq2Seq # <--- Dùng Collator này để fix lỗi padding
+    DataCollatorForSeq2Seq,
+    BitsAndBytesConfig  # <-- Thêm module lượng tử hóa
 )
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 # ==========================================
-# 1. TEMPLATE & PROMPTS
+# 1. TEMPLATE & PROMPTS (Giữ nguyên)
 # ==========================================
 
 def create_prompt_stage1(sentence, target_amr=None):
@@ -79,7 +80,7 @@ def format_data(sample, stage):
     except Exception: return None
 
 # ==========================================
-# 2. TRAINING SETUP (Fix Padding Error)
+# 2. TRAINING SETUP (24GB VRAM OPTIMIZED)
 # ==========================================
 
 def load_and_filter_dataset(file_path, stage):
@@ -95,24 +96,39 @@ def load_and_filter_dataset(file_path, stage):
     return Dataset.from_dict({"text": valid_data})
 
 def train(args):
-    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization | Seq2Seq Collator")
+    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 24GB Optimization (QLoRA 4-bit)")
     
     raw_dataset = load_and_filter_dataset(args.data_path, args.stage)
     
-    print("✨ Loading Model & Tokenizer...")
+    print("✨ Loading Model (4-bit Quantization)...")
+    
+    # Cấu hình 4-bit để tiết kiệm VRAM (chỉ tốn khoảng 5GB cho model base)
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16
+    )
+
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     tokenizer.pad_token = tokenizer.eos_token 
     
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
-        torch_dtype=torch.bfloat16,       
+        quantization_config=bnb_config, # Kích hoạt 4-bit
         device_map="auto",
         attn_implementation="sdpa" 
     )
     
+    # Chuẩn bị model cho việc train dạng k-bit
+    model = prepare_model_for_kbit_training(model)
+
     print("🛠️  Applying LoRA Config...")
     peft_config = LoraConfig(
-        lora_alpha=64, lora_dropout=0.05, r=128, bias="none",
+        lora_alpha=32, # Giảm nhẹ alpha
+        lora_dropout=0.05,
+        r=64,          # Giảm rank từ 128 xuống 64 để tiết kiệm VRAM và tính toán
+        bias="none",
         task_type="CAUSAL_LM",
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
     )
@@ -124,10 +140,8 @@ def train(args):
         prompts = [format_data({'text': t}, args.stage) for t in batch['text']]
         prompts = [p + tokenizer.eos_token for p in prompts if p]
         
-        # Tokenize nhưng KHÔNG padding tại đây (để padding=False)
-        # Để DataCollator làm việc đó tối ưu hơn
+        # Giảm max_length xuống 1536 nếu vẫn OOM, nhưng 2048 với 4-bit thường là OK
         outputs = tokenizer(prompts, truncation=True, max_length=2048, padding=False)
-        
         outputs["labels"] = outputs["input_ids"].copy()
         return outputs
 
@@ -136,24 +150,26 @@ def train(args):
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
-        per_device_train_batch_size=8,      
-        gradient_accumulation_steps=4,      
+        
+        # --- CẤU HÌNH VRAM THẤP ---
+        per_device_train_batch_size=2,  # Giảm batch xuống cực thấp (2)
+        gradient_accumulation_steps=16, # Tăng tích lũy lên để bù lại (2 * 16 = 32 effective batch)
+        gradient_checkpointing=True,    # QUAN TRỌNG: Đổi tính toán lấy bộ nhớ
+        
         learning_rate=2e-4,
         weight_decay=0.01,
         bf16=True,       
         fp16=False,
         logging_steps=10,
         save_strategy="epoch",
-        optim="adamw_torch", 
+        optim="paged_adamw_32bit",      # Optimizer tối ưu bộ nhớ
         report_to="none",
         remove_unused_columns=False,
     )
 
-    # --- SỬA CHÍNH: Dùng DataCollatorForSeq2Seq ---
-    # Collator này rất giỏi việc padding input_ids và labels cùng lúc
     data_collator = DataCollatorForSeq2Seq(
         tokenizer,
-        pad_to_multiple_of=8, # Tối ưu cho Tensor Cores
+        pad_to_multiple_of=8, 
         return_tensors="pt",
         padding=True 
     )
@@ -162,7 +178,7 @@ def train(args):
         model=model,
         args=training_args,
         train_dataset=tokenized_dataset,
-        data_collator=data_collator # Thay thế Collator cũ
+        data_collator=data_collator
     )
 
     trainer.train()
