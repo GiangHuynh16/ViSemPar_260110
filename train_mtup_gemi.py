@@ -2,6 +2,7 @@ import os
 import argparse
 import torch
 import re
+import gc
 from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
@@ -9,7 +10,7 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorForSeq2Seq,
-    BitsAndBytesConfig  # <-- Thêm module lượng tử hóa
+    BitsAndBytesConfig
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
@@ -37,7 +38,7 @@ Output: (đọc :ARG0 (cậu_bé) :ARG1 (sách))"""
 
 def create_prompt_stage2(sentence, amr_no_vars, target_full_amr=None):
     sys_prompt = """Bạn là một chuyên gia gán nhãn dữ liệu AMR (Abstract Meaning Representation).
-Nhiệm vụ: Hoàn thiện đồ thị AMR từ cấu trúc thô (chưa có biến) và câu gốc.
+Nhiệm vụ: Hoàn thiện đồ thị AMR chuẩn PENMAN từ cấu trúc thô (chưa có biến) và câu gốc.
 
 Yêu cầu QUAN TRỌNG:
 1. Gán biến (variables) định danh cho mỗi concept (vd: '(tôi)' -> '(t / tôi)').
@@ -80,7 +81,7 @@ def format_data(sample, stage):
     except Exception: return None
 
 # ==========================================
-# 2. TRAINING SETUP (24GB VRAM OPTIMIZED)
+# 2. TRAINING SETUP (ULTRA LOW MEMORY)
 # ==========================================
 
 def load_and_filter_dataset(file_path, stage):
@@ -96,13 +97,15 @@ def load_and_filter_dataset(file_path, stage):
     return Dataset.from_dict({"text": valid_data})
 
 def train(args):
-    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 24GB Optimization (QLoRA 4-bit)")
+    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 24GB Safe Mode")
     
+    # Clear Cache trước khi chạy
+    torch.cuda.empty_cache()
+    gc.collect()
+
     raw_dataset = load_and_filter_dataset(args.data_path, args.stage)
     
-    print("✨ Loading Model (4-bit Quantization)...")
-    
-    # Cấu hình 4-bit để tiết kiệm VRAM (chỉ tốn khoảng 5GB cho model base)
+    print("✨ Loading Model (4-bit)...")
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -115,19 +118,17 @@ def train(args):
     
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
-        quantization_config=bnb_config, # Kích hoạt 4-bit
+        quantization_config=bnb_config, 
         device_map="auto",
         attn_implementation="sdpa" 
     )
-    
-    # Chuẩn bị model cho việc train dạng k-bit
     model = prepare_model_for_kbit_training(model)
 
-    print("🛠️  Applying LoRA Config...")
+    print("🛠️  Applying LoRA Config (Rank 32)...")
     peft_config = LoraConfig(
-        lora_alpha=32, # Giảm nhẹ alpha
+        lora_alpha=16, 
         lora_dropout=0.05,
-        r=64,          # Giảm rank từ 128 xuống 64 để tiết kiệm VRAM và tính toán
+        r=32,          # Giảm Rank xuống 32 để nhẹ hơn
         bias="none",
         task_type="CAUSAL_LM",
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
@@ -135,13 +136,13 @@ def train(args):
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-    print("🔄 Tokenizing dataset...")
+    print("🔄 Tokenizing dataset (Max Len 1024)...")
     def tokenize_function(batch):
         prompts = [format_data({'text': t}, args.stage) for t in batch['text']]
         prompts = [p + tokenizer.eos_token for p in prompts if p]
         
-        # Giảm max_length xuống 1536 nếu vẫn OOM, nhưng 2048 với 4-bit thường là OK
-        outputs = tokenizer(prompts, truncation=True, max_length=2048, padding=False)
+        # GIẢM MAX LENGTH: 1024 là mức an toàn cho 24GB VRAM với 7B model
+        outputs = tokenizer(prompts, truncation=True, max_length=1024, padding=False)
         outputs["labels"] = outputs["input_ids"].copy()
         return outputs
 
@@ -151,10 +152,10 @@ def train(args):
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
         
-        # --- CẤU HÌNH VRAM THẤP ---
-        per_device_train_batch_size=2,  # Giảm batch xuống cực thấp (2)
-        gradient_accumulation_steps=16, # Tăng tích lũy lên để bù lại (2 * 16 = 32 effective batch)
-        gradient_checkpointing=True,    # QUAN TRỌNG: Đổi tính toán lấy bộ nhớ
+        # --- CẤU HÌNH SIÊU TIẾT KIỆM ---
+        per_device_train_batch_size=1,  # BATCH = 1 (Quan trọng nhất)
+        gradient_accumulation_steps=32, # Tăng tích lũy lên 32 để bù lại (1*32 = 32)
+        gradient_checkpointing=True,
         
         learning_rate=2e-4,
         weight_decay=0.01,
@@ -162,7 +163,7 @@ def train(args):
         fp16=False,
         logging_steps=10,
         save_strategy="epoch",
-        optim="paged_adamw_32bit",      # Optimizer tối ưu bộ nhớ
+        optim="paged_adamw_32bit",      
         report_to="none",
         remove_unused_columns=False,
     )
