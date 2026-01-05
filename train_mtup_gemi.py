@@ -33,7 +33,7 @@ Output: (đọc :ARG0 (cậu_bé) :ARG1 (sách))"""
 
 def create_prompt_stage2(sentence, amr_no_vars, target_full_amr=None):
     sys_prompt = """Bạn là một chuyên gia gán nhãn dữ liệu AMR (Abstract Meaning Representation).
-Nhiệm vụ: Hoàn thiện đồ thị AMR từ cấu trúc thô (chưa có biến) và câu gốc.
+Nhiệm vụ: Hoàn thiện đồ thị AMR chuẩn PENMAN từ cấu trúc thô (chưa có biến) và câu gốc.
 
 Yêu cầu QUAN TRỌNG:
 1. Gán biến (variables) định danh cho mỗi concept (vd: '(tôi)' -> '(t / tôi)').
@@ -58,6 +58,7 @@ Output: (c / cố_gắng
         prompt += f"{target_full_amr}<|im_end|>"
     return prompt
 
+# --- Cập nhật hàm format_data để trả về None nếu lỗi (để lọc sau) ---
 def format_data(sample, stage):
     text = sample['text']
     try:
@@ -70,25 +71,30 @@ def format_data(sample, stage):
             no_var = text.split("\nNO_VAR: ")[1].split("\nFULL: ")[0].strip()
             full = text.split("\nFULL: ")[1].strip()
             return create_prompt_stage2(sent, no_var, full)
-    except:
-        return ""
+    except Exception as e:
+        return None # Trả về None để lọc bỏ
 
-# ==========================================
-# 2. TRAINING SETUP
-# ==========================================
-
-def load_dataset_from_text(file_path):
+# --- Cập nhật hàm load_dataset để lọc dữ liệu ---
+def load_and_filter_dataset(file_path, stage):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     blocks = content.strip().split('\n\n')
-    blocks = [b for b in blocks if b.strip()]
-    return Dataset.from_dict({"text": blocks})
+    valid_data = []
+    for b in blocks:
+        if not b.strip(): continue
+        # Thử format luôn, nếu ok thì mới giữ lại
+        fmt = format_data({'text': b}, stage)
+        if fmt: 
+            valid_data.append(b) # Giữ lại raw text
+            
+    print(f"Original: {len(blocks)} | Valid: {len(valid_data)}")
+    return Dataset.from_dict({"text": valid_data})
 
 def train(args):
     print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization")
     
-    dataset = load_dataset_from_text(args.data_path)
-    print(f"Loaded {len(dataset)} samples.")
+    # 1. Load và Filter Dataset trước
+    dataset = load_and_filter_dataset(args.data_path, args.stage)
     
     print("✨ GPU 48GB Detected: Loading model in BFloat16")
     model = AutoModelForCausalLM.from_pretrained(
@@ -121,15 +127,15 @@ def train(args):
         fp16=False,
         logging_steps=10,
         save_strategy="epoch",
-        
-        # --- SỬA QUAN TRỌNG: Dùng adamw_torch để không cần bitsandbytes ---
         optim="adamw_torch",
-        # -------------------------------------------------------------------
-        
         report_to="none",
-        max_seq_length=2048, 
-        dataset_text_field="text",
-        packing=False
+        max_seq_length=2048,
+        packing=False,
+        
+        # --- FIX QUAN TRỌNG TẠI ĐÂY ---
+        remove_unused_columns=False,  # Tắt tính năng tự xóa cột gây lỗi input_ids
+        dataset_kwargs={"skip_prepare_dataset": True}, # Bỏ qua bước prepare mặc định thừa thãi
+        # ------------------------------
     )
 
     trainer = SFTTrainer(
