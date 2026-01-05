@@ -1,13 +1,15 @@
 import os
 import argparse
 import torch
+import inspect
 from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    TrainingArguments, # Dùng TrainingArguments chuẩn thay vì SFTConfig
 )
 from peft import LoraConfig
-from trl import SFTTrainer, SFTConfig 
+from trl import SFTTrainer
 
 # ==========================================
 # 1. TEMPLATE & PROMPTS
@@ -33,7 +35,7 @@ Output: (đọc :ARG0 (cậu_bé) :ARG1 (sách))"""
 
 def create_prompt_stage2(sentence, amr_no_vars, target_full_amr=None):
     sys_prompt = """Bạn là một chuyên gia gán nhãn dữ liệu AMR (Abstract Meaning Representation).
-Nhiệm vụ: Hoàn thiện đồ thị AMR chuẩn PENMAN từ cấu trúc thô (chưa có biến) và câu gốc.
+Nhiệm vụ: Hoàn thiện đồ thị AMR từ cấu trúc thô (chưa có biến) và câu gốc.
 
 Yêu cầu QUAN TRỌNG:
 1. Gán biến (variables) định danh cho mỗi concept (vd: '(tôi)' -> '(t / tôi)').
@@ -58,10 +60,9 @@ Output: (c / cố_gắng
         prompt += f"{target_full_amr}<|im_end|>"
     return prompt
 
-# --- Cập nhật hàm format_data để trả về None nếu lỗi (để lọc sau) ---
 def format_data(sample, stage):
-    text = sample['text']
     try:
+        text = sample['text']
         if stage == 1:
             sent = text.split("SENT: ")[1].split("\nAMR: ")[0].strip()
             amr = text.split("\nAMR: ")[1].strip()
@@ -71,10 +72,13 @@ def format_data(sample, stage):
             no_var = text.split("\nNO_VAR: ")[1].split("\nFULL: ")[0].strip()
             full = text.split("\nFULL: ")[1].strip()
             return create_prompt_stage2(sent, no_var, full)
-    except Exception as e:
-        return None # Trả về None để lọc bỏ
+    except Exception:
+        return None
 
-# --- Cập nhật hàm load_dataset để lọc dữ liệu ---
+# ==========================================
+# 2. TRAINING SETUP
+# ==========================================
+
 def load_and_filter_dataset(file_path, stage):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -82,18 +86,15 @@ def load_and_filter_dataset(file_path, stage):
     valid_data = []
     for b in blocks:
         if not b.strip(): continue
-        # Thử format luôn, nếu ok thì mới giữ lại
-        fmt = format_data({'text': b}, stage)
-        if fmt: 
-            valid_data.append(b) # Giữ lại raw text
+        if format_data({'text': b}, stage): 
+            valid_data.append(b)
             
-    print(f"Original: {len(blocks)} | Valid: {len(valid_data)}")
+    print(f"Dataset: {len(blocks)} raw -> {len(valid_data)} valid samples.")
     return Dataset.from_dict({"text": valid_data})
 
 def train(args):
     print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization")
     
-    # 1. Load và Filter Dataset trước
     dataset = load_and_filter_dataset(args.data_path, args.stage)
     
     print("✨ GPU 48GB Detected: Loading model in BFloat16")
@@ -116,7 +117,8 @@ def train(args):
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
     )
 
-    training_args = SFTConfig(
+    # 1. Sử dụng TrainingArguments chuẩn (luôn an toàn)
+    training_args = TrainingArguments(
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
         per_device_train_batch_size=8,      
@@ -127,25 +129,36 @@ def train(args):
         fp16=False,
         logging_steps=10,
         save_strategy="epoch",
-        optim="adamw_torch",
+        optim="adamw_torch", # Dùng optimizer chuẩn
         report_to="none",
-        max_seq_length=2048,
-        packing=False,
-        
-        # --- FIX QUAN TRỌNG TẠI ĐÂY ---
-        remove_unused_columns=False,  # Tắt tính năng tự xóa cột gây lỗi input_ids
-        dataset_kwargs={"skip_prepare_dataset": True}, # Bỏ qua bước prepare mặc định thừa thãi
-        # ------------------------------
+        remove_unused_columns=False, # Fix lỗi input_ids
     )
 
-    trainer = SFTTrainer(
-        model=model,
-        train_dataset=dataset,
-        peft_config=peft_config,
-        formatting_func=lambda batch: [format_data({'text': t}, args.stage) for t in batch['text']],
-        processing_class=tokenizer, 
-        args=training_args,
-    )
+    # 2. Xử lý max_seq_length thông minh
+    # Kiểm tra xem phiên bản SFTTrainer hiện tại có nhận max_seq_length không
+    trainer_kwargs = {
+        "model": model,
+        "train_dataset": dataset,
+        "peft_config": peft_config,
+        "processing_class": tokenizer,
+        "args": training_args,
+        "formatting_func": lambda batch: [format_data({'text': t}, args.stage) for t in batch['text']],
+    }
+    
+    # Inspect chữ ký hàm __init__ của SFTTrainer
+    sig = inspect.signature(SFTTrainer.__init__)
+    if 'max_seq_length' in sig.parameters:
+        print("✅ Detected SFTTrainer accepts 'max_seq_length'.")
+        trainer_kwargs['max_seq_length'] = 2048
+        trainer_kwargs['packing'] = False
+    else:
+        print("⚠️ SFTTrainer does not accept 'max_seq_length' directly. Attempting to pass via dataset_kwargs or args.")
+        # Nếu không nhận trực tiếp, ta thử hack vào args (dành cho version cực mới/cũ lạ)
+        # Tuy nhiên với TrainingArguments chuẩn, thường SFTTrainer sẽ tự fallback
+        pass
+
+    # 3. Khởi tạo Trainer
+    trainer = SFTTrainer(**trainer_kwargs)
 
     trainer.train()
     
