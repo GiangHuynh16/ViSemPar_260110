@@ -5,15 +5,13 @@ from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
-    # BitsAndBytesConfig, # Không dùng nữa vì chạy native BFloat16
 )
 from peft import LoraConfig
-# SỬA 1: Import SFTConfig thay vì TrainingArguments (hoặc import cả 2 nhưng dùng SFTConfig là chính)
 from trl import SFTTrainer, SFTConfig 
 
-# ... (GIỮ NGUYÊN CÁC HÀM create_prompt_stage1, create_prompt_stage2, format_data, load_dataset_from_text) ...
-# Để ngắn gọn tôi không paste lại đoạn create_prompt và format_data ở trên, 
-# bạn giữ nguyên logic hàm đó nhé.
+# ==========================================
+# 1. TEMPLATE & PROMPTS
+# ==========================================
 
 def create_prompt_stage1(sentence, target_amr=None):
     sys_prompt = """Bạn là một chuyên gia ngôn ngữ học về cấu trúc AMR (Abstract Meaning Representation).
@@ -35,7 +33,7 @@ Output: (đọc :ARG0 (cậu_bé) :ARG1 (sách))"""
 
 def create_prompt_stage2(sentence, amr_no_vars, target_full_amr=None):
     sys_prompt = """Bạn là một chuyên gia gán nhãn dữ liệu AMR (Abstract Meaning Representation).
-Nhiệm vụ: Hoàn thiện đồ thị AMR chuẩn PENMAN từ cấu trúc thô (chưa có biến) và câu gốc.
+Nhiệm vụ: Hoàn thiện đồ thị AMR từ cấu trúc thô (chưa có biến) và câu gốc.
 
 Yêu cầu QUAN TRỌNG:
 1. Gán biến (variables) định danh cho mỗi concept (vd: '(tôi)' -> '(t / tôi)').
@@ -61,6 +59,7 @@ Output: (c / cố_gắng
     return prompt
 
 def format_data(sample, stage):
+    # sample bây giờ sẽ là dictionary {'text': '...'} do ta tự tạo trong lambda
     text = sample['text']
     try:
         if stage == 1:
@@ -75,24 +74,30 @@ def format_data(sample, stage):
     except:
         return ""
 
+# ==========================================
+# 2. TRAINING SETUP
+# ==========================================
+
 def load_dataset_from_text(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     blocks = content.strip().split('\n\n')
+    # Filter empty blocks
+    blocks = [b for b in blocks if b.strip()]
     return Dataset.from_dict({"text": blocks})
 
-# --- HÀM TRAIN ĐÃ SỬA ---
 def train(args):
     print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization")
     
     dataset = load_dataset_from_text(args.data_path)
+    print(f"Loaded {len(dataset)} samples.")
     
     print("✨ GPU 48GB Detected: Loading model in BFloat16")
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
         torch_dtype=torch.bfloat16,       
         device_map="auto",
-        attn_implementation="sdpa" # Dùng sdpa cho lành
+        attn_implementation="sdpa" 
     )
     
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -107,8 +112,6 @@ def train(args):
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
     )
 
-    # SỬA 2: Dùng SFTConfig thay cho TrainingArguments
-    # SFTConfig chứa cả tham số training thường lẫn tham số của SFTTrainer (như max_seq_length)
     training_args = SFTConfig(
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
@@ -122,22 +125,20 @@ def train(args):
         save_strategy="epoch",
         optim="paged_adamw_32bit",
         report_to="none",
-        
-        # QUAN TRỌNG: max_seq_length bây giờ nằm ở đây
         max_seq_length=2048, 
-        dataset_text_field="text", # Cần khai báo trường text dù dùng formatting_func để tránh warning
-        packing=False # Tắt packing để tránh lỗi với formatting_func
+        dataset_text_field="text",
+        packing=False
     )
 
     trainer = SFTTrainer(
         model=model,
         train_dataset=dataset,
         peft_config=peft_config,
-        formatting_func=lambda x: [format_data(item, args.stage) for item in x],
-        # SỬA 3: Đổi 'tokenizer' thành 'processing_class' để fix warning
+        # --- FIX LỖI TẠI ĐÂY ---
+        formatting_func=lambda batch: [format_data({'text': t}, args.stage) for t in batch['text']],
+        # -----------------------
         processing_class=tokenizer, 
         args=training_args,
-        # SỬA 4: Đã xóa max_seq_length ở đây vì nó đã nằm trong args (SFTConfig)
     )
 
     trainer.train()
