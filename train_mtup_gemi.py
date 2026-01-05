@@ -107,44 +107,44 @@ def train(args):
     
     dataset = load_dataset_from_text(args.data_path)
     
-    # Config cho 48GB VRAM:
-    # Có thể dùng bnb_4bit để tiết kiệm bộ nhớ, tăng batch size lên cực cao
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_use_double_quant=True,
-    )
-
+    # 1. LOAD MODEL (Sửa: Chỉ giữ lại 1 lần khai báo chuẩn BFloat16)
+    print("✨ GPU 48GB Detected: Loading model in BFloat16 (No Quantization needed)")
+    
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
-        quantization_config=bnb_config,
+        torch_dtype=torch.bfloat16,       # Chạy Native 16-bit (Không cần bitsandbytes)
         device_map="auto",
         attn_implementation="flash_attention_2" 
     )
     
+    # (ĐÃ XÓA đoạn khai báo model lần 2 bị thừa ở đây)
+    
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     tokenizer.pad_token = tokenizer.eos_token
     
-    # LoRA Config
+    # 2. LORA CONFIG
     peft_config = LoraConfig(
-        lora_alpha=64,    # Alpha cao giúp học nhanh hơn
+        lora_alpha=64,
         lora_dropout=0.05,
-        r=128,            # Rank cao (128) vì task AMR cấu trúc phức tạp
+        r=128,
         bias="none",
         task_type="CAUSAL_LM",
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
     )
 
+    # 3. TRAINING ARGS
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
-        # Tối ưu cho 48GB VRAM:
-        per_device_train_batch_size=8,      # 8 mẫu một lần (khá an toàn với 7B QLoRA)
-        gradient_accumulation_steps=4,      # 8 * 4 = 32 effective batch size (ổn định)
+        per_device_train_batch_size=8,      
+        gradient_accumulation_steps=4,      
         learning_rate=2e-4,
         weight_decay=0.01,
-        fp16=True,
+        
+        # SỬA QUAN TRỌNG: Đổi fp16 thành bf16 để khớp với model torch_dtype=torch.bfloat16
+        bf16=True,       # Tốt hơn fp16 trên A100/A6000/3090/4090
+        fp16=False,      # Tắt fp16 đi
+        
         logging_steps=10,
         save_strategy="epoch",
         optim="paged_adamw_32bit",
@@ -158,7 +158,7 @@ def train(args):
         formatting_func=lambda x: [format_data(item, args.stage) for item in x],
         tokenizer=tokenizer,
         args=training_args,
-        max_seq_length=2048, # Context dài thoải mái
+        max_seq_length=2048,
     )
 
     trainer.train()
