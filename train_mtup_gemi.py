@@ -2,7 +2,7 @@ import os
 import argparse
 import torch
 import inspect
-import re # Thêm regex để parse thông minh hơn
+import re
 from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
@@ -36,7 +36,7 @@ Output: (đọc :ARG0 (cậu_bé) :ARG1 (sách))"""
 
 def create_prompt_stage2(sentence, amr_no_vars, target_full_amr=None):
     sys_prompt = """Bạn là một chuyên gia gán nhãn dữ liệu AMR (Abstract Meaning Representation).
-Nhiệm vụ: Hoàn thiện đồ thị AMR chuẩn PENMAN từ cấu trúc thô (chưa có biến) và câu gốc.
+Nhiệm vụ: Hoàn thiện đồ thị AMR từ cấu trúc thô (chưa có biến) và câu gốc.
 
 Yêu cầu QUAN TRỌNG:
 1. Gán biến (variables) định danh cho mỗi concept (vd: '(tôi)' -> '(t / tôi)').
@@ -62,38 +62,31 @@ Output: (c / cố_gắng
     return prompt
 
 def format_data(sample, stage):
+    # Hàm này nhận vào 1 dictionary sample và trả về STRING hoặc None
     text = sample['text'].strip()
     if not text: return None
     
     try:
-        # --- CƠ CHẾ PARSE LINH HOẠT (Hỗ trợ cả format cũ và mới) ---
-        
         # STAGE 1
         if stage == 1:
-            # Pattern 1: Format mới (SENT / AMR)
             match = re.search(r'SENT:\s*(.*?)\nAMR:\s*(.*)', text, re.DOTALL)
             if match:
                 return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
             
-            # Pattern 2: Format cũ (Input / Output)
             match = re.search(r'Input:\s*(.*?)\nOutput:\s*(.*)', text, re.DOTALL)
             if match:
                 return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
 
         # STAGE 2
         else:
-            # Pattern 1: Format mới (SENT / NO_VAR / FULL)
             match = re.search(r'SENT:\s*(.*?)\nNO_VAR:\s*(.*?)\nFULL:\s*(.*)', text, re.DOTALL)
             if match:
                 return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
             
-            # Pattern 2: Format cũ có <sep>
-            # Input: sent <sep> no_var \n Output: full
             match = re.search(r'Input:\s*(.*?)<sep>(.*?)\nOutput:\s*(.*)', text, re.DOTALL)
             if match:
                 return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
 
-        # Nếu không match pattern nào
         return None
     except Exception:
         return None
@@ -110,38 +103,41 @@ def load_and_filter_dataset(file_path, stage):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    # Split blocks
     blocks = content.strip().split('\n\n')
     blocks = [b for b in blocks if b.strip()]
     
-    print(f"📊 Found {len(blocks)} raw blocks. Filtering...")
-    
+    # Chỉ giữ lại các block raw text hợp lệ trước
     valid_data = []
-    failed_count = 0
-    
-    for i, b in enumerate(blocks):
-        fmt = format_data({'text': b}, stage)
-        if fmt: 
+    for b in blocks:
+        # Test format thử, nếu ok thì giữ
+        if format_data({'text': b}, stage): 
             valid_data.append(b)
-        else:
-            failed_count += 1
-            # DEBUG: In ra lỗi của sample đầu tiên để user biết đường sửa
-            if failed_count == 1:
-                print(f"⚠️  WARNING: Could not parse sample #{i+1}. It looks like this:\n---START---\n{b}\n---END---")
-                print("👉 Please check if 'SENT:' or 'Input:' keywords match the code logic.")
-
-    print(f"✅ Loaded: {len(valid_data)} valid samples. (Failed: {failed_count})")
-    
+            
+    print(f"Dataset: {len(blocks)} raw -> {len(valid_data)} valid samples.")
     if len(valid_data) == 0:
-        raise ValueError("❌ DATASET IS EMPTY! Please check the input file format or run prepare_data.py again.")
+        raise ValueError("❌ DATASET IS EMPTY!")
         
     return Dataset.from_dict({"text": valid_data})
 
 def train(args):
     print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization")
     
-    # Load dataset with debug info
-    dataset = load_and_filter_dataset(args.data_path, args.stage)
+    # 1. Load Data
+    raw_dataset = load_and_filter_dataset(args.data_path, args.stage)
+    
+    # 2. APPLY FORMATTING MANUALLY (FIX LỖI HERE)
+    # Thay vì để Trainer format, ta format luôn tại đây
+    print("🛠️  Pre-formatting dataset...")
+    
+    def apply_format_map(batch):
+        # Batch['text'] là list các raw block
+        formatted_prompts = []
+        for raw_text in batch['text']:
+            prompt = format_data({'text': raw_text}, args.stage)
+            formatted_prompts.append(prompt)
+        return {"text": formatted_prompts} # Ghi đè cột text bằng prompt chuẩn
+    
+    dataset = raw_dataset.map(apply_format_map, batched=True)
     
     print("✨ GPU 48GB Detected: Loading model in BFloat16")
     model = AutoModelForCausalLM.from_pretrained(
@@ -179,14 +175,14 @@ def train(args):
         remove_unused_columns=False, 
     )
 
-    # Check for max_seq_length support
     trainer_kwargs = {
         "model": model,
-        "train_dataset": dataset,
+        "train_dataset": dataset, # Dataset đã format sẵn
         "peft_config": peft_config,
         "processing_class": tokenizer,
         "args": training_args,
-        "formatting_func": lambda batch: [format_data({'text': t}, args.stage) for t in batch['text']],
+        "dataset_text_field": "text", # Chỉ định cột text đã format
+        # KHÔNG TRUYỀN formatting_func NỮA ĐỂ TRÁNH LỖI
     }
     
     sig = inspect.signature(SFTTrainer.__init__)
