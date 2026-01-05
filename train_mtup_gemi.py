@@ -112,9 +112,9 @@ def train(args):
     
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
-        torch_dtype=torch.bfloat16,       # Chạy Native 16-bit (Không cần bitsandbytes)
+        torch_dtype=torch.bfloat16,
         device_map="auto",
-        attn_implementation="flash_attention_2" 
+        attn_implementation="sdpa" # <--- Sửa thành "sdpa" (Scaled Dot Product Attention)
     )
     
     # (ĐÃ XÓA đoạn khai báo model lần 2 bị thừa ở đây)
