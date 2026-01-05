@@ -8,7 +8,7 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling
+    DataCollatorForSeq2Seq # <--- Dùng Collator này để fix lỗi padding
 )
 from peft import LoraConfig, get_peft_model
 
@@ -79,7 +79,7 @@ def format_data(sample, stage):
     except Exception: return None
 
 # ==========================================
-# 2. TRAINING SETUP (Standard Trainer)
+# 2. TRAINING SETUP (Fix Padding Error)
 # ==========================================
 
 def load_and_filter_dataset(file_path, stage):
@@ -95,15 +95,13 @@ def load_and_filter_dataset(file_path, stage):
     return Dataset.from_dict({"text": valid_data})
 
 def train(args):
-    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization | Standard Trainer")
+    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization | Seq2Seq Collator")
     
-    # 1. Load Data
     raw_dataset = load_and_filter_dataset(args.data_path, args.stage)
     
-    # 2. Load Tokenizer & Model
     print("✨ Loading Model & Tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    tokenizer.pad_token = tokenizer.eos_token # Qwen cần set padding
+    tokenizer.pad_token = tokenizer.eos_token 
     
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
@@ -112,7 +110,6 @@ def train(args):
         attn_implementation="sdpa" 
     )
     
-    # 3. Apply LoRA Manually (Thay vì nhờ SFTTrainer)
     print("🛠️  Applying LoRA Config...")
     peft_config = LoraConfig(
         lora_alpha=64, lora_dropout=0.05, r=128, bias="none",
@@ -122,23 +119,20 @@ def train(args):
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-    # 4. Tokenize & Format Dataset Manually
     print("🔄 Tokenizing dataset...")
     def tokenize_function(batch):
         prompts = [format_data({'text': t}, args.stage) for t in batch['text']]
-        # Thêm EOS token vào cuối mỗi câu để model biết điểm dừng
         prompts = [p + tokenizer.eos_token for p in prompts if p]
         
-        # Tokenize (Padding sẽ do DataCollator lo, ở đây chỉ cắt)
+        # Tokenize nhưng KHÔNG padding tại đây (để padding=False)
+        # Để DataCollator làm việc đó tối ưu hơn
         outputs = tokenizer(prompts, truncation=True, max_length=2048, padding=False)
         
-        # Với Causal LM, labels chính là input_ids
         outputs["labels"] = outputs["input_ids"].copy()
         return outputs
 
     tokenized_dataset = raw_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
 
-    # 5. Training Arguments Check
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
@@ -152,23 +146,29 @@ def train(args):
         save_strategy="epoch",
         optim="adamw_torch", 
         report_to="none",
-        remove_unused_columns=False, # Quan trọng
+        remove_unused_columns=False,
     )
 
-    # 6. Initialize Standard Trainer
+    # --- SỬA CHÍNH: Dùng DataCollatorForSeq2Seq ---
+    # Collator này rất giỏi việc padding input_ids và labels cùng lúc
+    data_collator = DataCollatorForSeq2Seq(
+        tokenizer,
+        pad_to_multiple_of=8, # Tối ưu cho Tensor Cores
+        return_tensors="pt",
+        padding=True 
+    )
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_dataset,
-        # DataCollator tự động pad các câu trong batch về cùng độ dài
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
+        data_collator=data_collator # Thay thế Collator cũ
     )
 
     trainer.train()
     
-    # Save
     final_path = os.path.join(args.output_dir, "final_adapter")
-    trainer.save_model(final_path) # Trainer chuẩn dùng save_model
+    trainer.save_model(final_path)
     tokenizer.save_pretrained(final_path)
     print(f"✅ Training Done. Saved to {final_path}")
 
