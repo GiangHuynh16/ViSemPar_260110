@@ -2,11 +2,12 @@ import os
 import argparse
 import torch
 import inspect
+import re # Thêm regex để parse thông minh hơn
 from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
-    TrainingArguments, # Dùng TrainingArguments chuẩn thay vì SFTConfig
+    TrainingArguments,
 )
 from peft import LoraConfig
 from trl import SFTTrainer
@@ -35,7 +36,7 @@ Output: (đọc :ARG0 (cậu_bé) :ARG1 (sách))"""
 
 def create_prompt_stage2(sentence, amr_no_vars, target_full_amr=None):
     sys_prompt = """Bạn là một chuyên gia gán nhãn dữ liệu AMR (Abstract Meaning Representation).
-Nhiệm vụ: Hoàn thiện đồ thị AMR từ cấu trúc thô (chưa có biến) và câu gốc.
+Nhiệm vụ: Hoàn thiện đồ thị AMR chuẩn PENMAN từ cấu trúc thô (chưa có biến) và câu gốc.
 
 Yêu cầu QUAN TRỌNG:
 1. Gán biến (variables) định danh cho mỗi concept (vd: '(tôi)' -> '(t / tôi)').
@@ -61,17 +62,39 @@ Output: (c / cố_gắng
     return prompt
 
 def format_data(sample, stage):
+    text = sample['text'].strip()
+    if not text: return None
+    
     try:
-        text = sample['text']
+        # --- CƠ CHẾ PARSE LINH HOẠT (Hỗ trợ cả format cũ và mới) ---
+        
+        # STAGE 1
         if stage == 1:
-            sent = text.split("SENT: ")[1].split("\nAMR: ")[0].strip()
-            amr = text.split("\nAMR: ")[1].strip()
-            return create_prompt_stage1(sent, amr)
+            # Pattern 1: Format mới (SENT / AMR)
+            match = re.search(r'SENT:\s*(.*?)\nAMR:\s*(.*)', text, re.DOTALL)
+            if match:
+                return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
+            
+            # Pattern 2: Format cũ (Input / Output)
+            match = re.search(r'Input:\s*(.*?)\nOutput:\s*(.*)', text, re.DOTALL)
+            if match:
+                return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
+
+        # STAGE 2
         else:
-            sent = text.split("SENT: ")[1].split("\nNO_VAR: ")[0].strip()
-            no_var = text.split("\nNO_VAR: ")[1].split("\nFULL: ")[0].strip()
-            full = text.split("\nFULL: ")[1].strip()
-            return create_prompt_stage2(sent, no_var, full)
+            # Pattern 1: Format mới (SENT / NO_VAR / FULL)
+            match = re.search(r'SENT:\s*(.*?)\nNO_VAR:\s*(.*?)\nFULL:\s*(.*)', text, re.DOTALL)
+            if match:
+                return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
+            
+            # Pattern 2: Format cũ có <sep>
+            # Input: sent <sep> no_var \n Output: full
+            match = re.search(r'Input:\s*(.*?)<sep>(.*?)\nOutput:\s*(.*)', text, re.DOTALL)
+            if match:
+                return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
+
+        # Nếu không match pattern nào
+        return None
     except Exception:
         return None
 
@@ -80,21 +103,44 @@ def format_data(sample, stage):
 # ==========================================
 
 def load_and_filter_dataset(file_path, stage):
+    print(f"📂 Reading file: {file_path}")
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Cannot find file: {file_path}")
+        
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
+    
+    # Split blocks
     blocks = content.strip().split('\n\n')
+    blocks = [b for b in blocks if b.strip()]
+    
+    print(f"📊 Found {len(blocks)} raw blocks. Filtering...")
+    
     valid_data = []
-    for b in blocks:
-        if not b.strip(): continue
-        if format_data({'text': b}, stage): 
+    failed_count = 0
+    
+    for i, b in enumerate(blocks):
+        fmt = format_data({'text': b}, stage)
+        if fmt: 
             valid_data.append(b)
-            
-    print(f"Dataset: {len(blocks)} raw -> {len(valid_data)} valid samples.")
+        else:
+            failed_count += 1
+            # DEBUG: In ra lỗi của sample đầu tiên để user biết đường sửa
+            if failed_count == 1:
+                print(f"⚠️  WARNING: Could not parse sample #{i+1}. It looks like this:\n---START---\n{b}\n---END---")
+                print("👉 Please check if 'SENT:' or 'Input:' keywords match the code logic.")
+
+    print(f"✅ Loaded: {len(valid_data)} valid samples. (Failed: {failed_count})")
+    
+    if len(valid_data) == 0:
+        raise ValueError("❌ DATASET IS EMPTY! Please check the input file format or run prepare_data.py again.")
+        
     return Dataset.from_dict({"text": valid_data})
 
 def train(args):
     print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization")
     
+    # Load dataset with debug info
     dataset = load_and_filter_dataset(args.data_path, args.stage)
     
     print("✨ GPU 48GB Detected: Loading model in BFloat16")
@@ -117,7 +163,6 @@ def train(args):
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
     )
 
-    # 1. Sử dụng TrainingArguments chuẩn (luôn an toàn)
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
@@ -129,13 +174,12 @@ def train(args):
         fp16=False,
         logging_steps=10,
         save_strategy="epoch",
-        optim="adamw_torch", # Dùng optimizer chuẩn
+        optim="adamw_torch", 
         report_to="none",
-        remove_unused_columns=False, # Fix lỗi input_ids
+        remove_unused_columns=False, 
     )
 
-    # 2. Xử lý max_seq_length thông minh
-    # Kiểm tra xem phiên bản SFTTrainer hiện tại có nhận max_seq_length không
+    # Check for max_seq_length support
     trainer_kwargs = {
         "model": model,
         "train_dataset": dataset,
@@ -145,19 +189,11 @@ def train(args):
         "formatting_func": lambda batch: [format_data({'text': t}, args.stage) for t in batch['text']],
     }
     
-    # Inspect chữ ký hàm __init__ của SFTTrainer
     sig = inspect.signature(SFTTrainer.__init__)
     if 'max_seq_length' in sig.parameters:
-        print("✅ Detected SFTTrainer accepts 'max_seq_length'.")
         trainer_kwargs['max_seq_length'] = 2048
         trainer_kwargs['packing'] = False
-    else:
-        print("⚠️ SFTTrainer does not accept 'max_seq_length' directly. Attempting to pass via dataset_kwargs or args.")
-        # Nếu không nhận trực tiếp, ta thử hack vào args (dành cho version cực mới/cũ lạ)
-        # Tuy nhiên với TrainingArguments chuẩn, thường SFTTrainer sẽ tự fallback
-        pass
 
-    # 3. Khởi tạo Trainer
     trainer = SFTTrainer(**trainer_kwargs)
 
     trainer.train()
