@@ -1,16 +1,16 @@
 import os
 import argparse
 import torch
-import inspect
 import re
 from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     TrainingArguments,
+    Trainer,
+    DataCollatorForLanguageModeling
 )
-from peft import LoraConfig
-from trl import SFTTrainer
+from peft import LoraConfig, get_peft_model
 
 # ==========================================
 # 1. TEMPLATE & PROMPTS
@@ -62,84 +62,49 @@ Output: (c / cố_gắng
     return prompt
 
 def format_data(sample, stage):
-    # Hàm này nhận vào 1 dictionary sample và trả về STRING hoặc None
     text = sample['text'].strip()
     if not text: return None
-    
     try:
-        # STAGE 1
         if stage == 1:
             match = re.search(r'SENT:\s*(.*?)\nAMR:\s*(.*)', text, re.DOTALL)
-            if match:
-                return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
-            
+            if match: return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
             match = re.search(r'Input:\s*(.*?)\nOutput:\s*(.*)', text, re.DOTALL)
-            if match:
-                return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
-
-        # STAGE 2
+            if match: return create_prompt_stage1(match.group(1).strip(), match.group(2).strip())
         else:
             match = re.search(r'SENT:\s*(.*?)\nNO_VAR:\s*(.*?)\nFULL:\s*(.*)', text, re.DOTALL)
-            if match:
-                return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
-            
+            if match: return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
             match = re.search(r'Input:\s*(.*?)<sep>(.*?)\nOutput:\s*(.*)', text, re.DOTALL)
-            if match:
-                return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
-
+            if match: return create_prompt_stage2(match.group(1).strip(), match.group(2).strip(), match.group(3).strip())
         return None
-    except Exception:
-        return None
+    except Exception: return None
 
 # ==========================================
-# 2. TRAINING SETUP
+# 2. TRAINING SETUP (Standard Trainer)
 # ==========================================
 
 def load_and_filter_dataset(file_path, stage):
     print(f"📂 Reading file: {file_path}")
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Cannot find file: {file_path}")
-        
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    if not os.path.exists(file_path): raise FileNotFoundError(f"Cannot find: {file_path}")
+    with open(file_path, 'r', encoding='utf-8') as f: content = f.read()
     
-    blocks = content.strip().split('\n\n')
-    blocks = [b for b in blocks if b.strip()]
-    
-    # Chỉ giữ lại các block raw text hợp lệ trước
-    valid_data = []
-    for b in blocks:
-        # Test format thử, nếu ok thì giữ
-        if format_data({'text': b}, stage): 
-            valid_data.append(b)
+    blocks = [b for b in content.strip().split('\n\n') if b.strip()]
+    valid_data = [b for b in blocks if format_data({'text': b}, stage)]
             
     print(f"Dataset: {len(blocks)} raw -> {len(valid_data)} valid samples.")
-    if len(valid_data) == 0:
-        raise ValueError("❌ DATASET IS EMPTY!")
-        
+    if not valid_data: raise ValueError("❌ DATASET IS EMPTY!")
     return Dataset.from_dict({"text": valid_data})
 
 def train(args):
-    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization")
+    print(f"🚀 START TRAINING STAGE {args.stage} | GPU 48GB Optimization | Standard Trainer")
     
     # 1. Load Data
     raw_dataset = load_and_filter_dataset(args.data_path, args.stage)
     
-    # 2. APPLY FORMATTING MANUALLY (FIX LỖI HERE)
-    # Thay vì để Trainer format, ta format luôn tại đây
-    print("🛠️  Pre-formatting dataset...")
+    # 2. Load Tokenizer & Model
+    print("✨ Loading Model & Tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer.pad_token = tokenizer.eos_token # Qwen cần set padding
     
-    def apply_format_map(batch):
-        # Batch['text'] là list các raw block
-        formatted_prompts = []
-        for raw_text in batch['text']:
-            prompt = format_data({'text': raw_text}, args.stage)
-            formatted_prompts.append(prompt)
-        return {"text": formatted_prompts} # Ghi đè cột text bằng prompt chuẩn
-    
-    dataset = raw_dataset.map(apply_format_map, batched=True)
-    
-    print("✨ GPU 48GB Detected: Loading model in BFloat16")
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
         torch_dtype=torch.bfloat16,       
@@ -147,18 +112,33 @@ def train(args):
         attn_implementation="sdpa" 
     )
     
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    tokenizer.pad_token = tokenizer.eos_token
-    
+    # 3. Apply LoRA Manually (Thay vì nhờ SFTTrainer)
+    print("🛠️  Applying LoRA Config...")
     peft_config = LoraConfig(
-        lora_alpha=64,
-        lora_dropout=0.05,
-        r=128,
-        bias="none",
+        lora_alpha=64, lora_dropout=0.05, r=128, bias="none",
         task_type="CAUSAL_LM",
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
     )
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
 
+    # 4. Tokenize & Format Dataset Manually
+    print("🔄 Tokenizing dataset...")
+    def tokenize_function(batch):
+        prompts = [format_data({'text': t}, args.stage) for t in batch['text']]
+        # Thêm EOS token vào cuối mỗi câu để model biết điểm dừng
+        prompts = [p + tokenizer.eos_token for p in prompts if p]
+        
+        # Tokenize (Padding sẽ do DataCollator lo, ở đây chỉ cắt)
+        outputs = tokenizer(prompts, truncation=True, max_length=2048, padding=False)
+        
+        # Với Causal LM, labels chính là input_ids
+        outputs["labels"] = outputs["input_ids"].copy()
+        return outputs
+
+    tokenized_dataset = raw_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
+
+    # 5. Training Arguments Check
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         num_train_epochs=args.epochs,
@@ -172,30 +152,23 @@ def train(args):
         save_strategy="epoch",
         optim="adamw_torch", 
         report_to="none",
-        remove_unused_columns=False, 
+        remove_unused_columns=False, # Quan trọng
     )
 
-    trainer_kwargs = {
-        "model": model,
-        "train_dataset": dataset, # Dataset đã format sẵn
-        "peft_config": peft_config,
-        "processing_class": tokenizer,
-        "args": training_args,
-        "dataset_text_field": "text", # Chỉ định cột text đã format
-        # KHÔNG TRUYỀN formatting_func NỮA ĐỂ TRÁNH LỖI
-    }
-    
-    sig = inspect.signature(SFTTrainer.__init__)
-    if 'max_seq_length' in sig.parameters:
-        trainer_kwargs['max_seq_length'] = 2048
-        trainer_kwargs['packing'] = False
-
-    trainer = SFTTrainer(**trainer_kwargs)
+    # 6. Initialize Standard Trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_dataset,
+        # DataCollator tự động pad các câu trong batch về cùng độ dài
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
+    )
 
     trainer.train()
     
+    # Save
     final_path = os.path.join(args.output_dir, "final_adapter")
-    trainer.model.save_pretrained(final_path)
+    trainer.save_model(final_path) # Trainer chuẩn dùng save_model
     tokenizer.save_pretrained(final_path)
     print(f"✅ Training Done. Saved to {final_path}")
 
