@@ -59,7 +59,6 @@ Output: (c / cố_gắng
     return prompt
 
 def format_data(sample, stage):
-    # sample bây giờ sẽ là dictionary {'text': '...'} do ta tự tạo trong lambda
     text = sample['text']
     try:
         if stage == 1:
@@ -82,7 +81,6 @@ def load_dataset_from_text(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     blocks = content.strip().split('\n\n')
-    # Filter empty blocks
     blocks = [b for b in blocks if b.strip()]
     return Dataset.from_dict({"text": blocks})
 
@@ -123,7 +121,11 @@ def train(args):
         fp16=False,
         logging_steps=10,
         save_strategy="epoch",
-        optim="paged_adamw_32bit",
+        
+        # --- SỬA QUAN TRỌNG: Dùng adamw_torch để không cần bitsandbytes ---
+        optim="adamw_torch",
+        # -------------------------------------------------------------------
+        
         report_to="none",
         max_seq_length=2048, 
         dataset_text_field="text",
@@ -134,9 +136,7 @@ def train(args):
         model=model,
         train_dataset=dataset,
         peft_config=peft_config,
-        # --- FIX LỖI TẠI ĐÂY ---
         formatting_func=lambda batch: [format_data({'text': t}, args.stage) for t in batch['text']],
-        # -----------------------
         processing_class=tokenizer, 
         args=training_args,
     )
