@@ -46,7 +46,7 @@ def create_prompt_stage2(sentence, amr_no_vars, target_full_amr=None):
     CẬP NHẬT: Sử dụng ví dụ 'Hard' có Re-entrancy (Nam - cậu ấy).
     """
     sys_prompt = """Bạn là một chuyên gia gán nhãn dữ liệu AMR (Abstract Meaning Representation).
-Nhiệm vụ: Hoàn thiện đồ thị AMR từ cấu trúc thô (chưa có biến) và câu gốc.
+Nhiệm vụ: Hoàn thiện đồ thị AMR chuẩn PENMAN từ cấu trúc thô (chưa có biến) và câu gốc.
 
 Yêu cầu QUAN TRỌNG:
 1. Gán biến (variables) định danh cho mỗi concept (vd: '(tôi)' -> '(t / tôi)').
