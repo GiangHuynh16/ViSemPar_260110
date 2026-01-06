@@ -1,3 +1,4 @@
+import os
 import torch
 import argparse
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
@@ -74,6 +75,11 @@ def predict(args):
         # Cắt bỏ phần prompt, chỉ lấy phần output của assistant
         response = generated_text.split("assistant\n")[-1].strip()
         results.append(response)
+
+    output_dir = os.path.dirname(args.output_file)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Created directory: {output_dir}")
 
     with open(args.output_file, 'w', encoding='utf-8') as f:
         for res in results:
