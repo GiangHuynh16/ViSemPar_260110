@@ -1,83 +1,79 @@
-import re
 import sys
+import re
+try:
+    import penman
+except ImportError:
+    print("❌ Lỗi: Chưa cài penman. Hãy chạy: pip install penman")
+    sys.exit(1)
 
-# === CẤU HÌNH ===
-INPUT_PRED_FILE = "evaluation_results/mtup/final_amr_submission.txt"
-OUTPUT_FIXED_FILE = "evaluation_results/mtup/final_amr_submission_fixed.txt"
+# === INPUT / OUTPUT ===
+INPUT_FILE = "evaluation_results/mtup/final_amr_submission.txt" # File gốc từ model
+OUTPUT_FILE = "evaluation_results/mtup/final_amr_clean.txt"     # File sạch 100%
 
-def fix_amr_string(amr_string):
-    """Hàm sửa các lỗi cú pháp phổ biến do LLM sinh ra"""
-    if not amr_string or amr_string.strip() == "":
-        return "(a / amr-empty)"
-
-    # 1. Sửa lỗi khoảng trắng sau dấu hai chấm (VD: ": arg1" -> ":arg1")
-    # Regex tìm dấu : theo sau là khoảng trắng và chữ cái
-    amr_string = re.sub(r':\s+([a-zA-Z0-9-]+)', r':\1', amr_string)
-
-    # 2. Cân bằng dấu ngoặc đơn (QUAN TRỌNG NHẤT)
-    open_count = amr_string.count('(')
-    close_count = amr_string.count(')')
+def aggressive_fix(text):
+    """Cố gắng sửa chuỗi text nát bươm thành AMR hợp lệ"""
+    if not text or len(text.strip()) < 3: return "(a / amr-empty)"
     
-    if open_count > close_count:
-        # Thiếu ngoặc đóng -> Thêm vào cuối
-        amr_string += ')' * (open_count - close_count)
-    elif close_count > open_count:
-        # Thừa ngoặc đóng -> Cắt bớt từ cuối (nguy hiểm hơn, nhưng cần thiết)
-        # Cách an toàn: Giữ nguyên, hy vọng parser bỏ qua, hoặc xóa bớt
-        # Ở đây ta chọn cách xóa bớt các ký tự ) ở cuối chuỗi
-        diff = close_count - open_count
-        amr_string = amr_string.rstrip()
-        if amr_string.endswith(')' * diff):
-             amr_string = amr_string[:-diff]
+    # 1. Xóa các key bị treo lơ lửng ở cuối (ví dụ: :wiki( hoặc :arg1)
+    # Tìm các pattern :key chưa có value ở cuối câu
+    text = re.sub(r':\w+\s*[({]?$', '', text)
     
-    # 3. Sửa lỗi biến bị trùng hoặc sai format (cơ bản)
-    # VD: (t / tôi) -> model đôi khi sinh (t/tôi) dính liền
-    amr_string = amr_string.replace("/", " / ")
-    # Xóa khoảng trắng thừa do bước trên tạo ra
-    amr_string = re.sub(r'\s+', ' ', amr_string).strip()
-    
-    # 4. Kiểm tra xem có bắt đầu bằng ( không, nếu không thì wrap lại
-    if not amr_string.startswith("("):
-        # Cố gắng tìm điểm bắt đầu
-        start = amr_string.find("(")
-        if start != -1:
-            amr_string = amr_string[start:]
-        else:
-            return "(a / amr-empty)" # Không cứu được
-
-    return amr_string
+    # 2. Cân bằng ngoặc
+    open_c = text.count('(')
+    close_c = text.count(')')
+    if open_c > close_c:
+        text += ')' * (open_c - close_c)
+    elif close_c > open_c:
+        # Cắt bớt ngoặc thừa
+        text = text[:-(close_c - open_c)]
+        
+    return text
 
 def main():
-    print(f"🔧 Đang sửa lỗi file: {INPUT_PRED_FILE}")
+    print(f"🔧 Đang clean file bằng Penman Validator...")
     
-    with open(INPUT_PRED_FILE, 'r', encoding='utf-8') as f:
+    with open(INPUT_FILE, 'r', encoding='utf-8') as f:
         lines = f.readlines()
         
-    fixed_lines = []
+    clean_lines = []
     error_count = 0
     
     for i, line in enumerate(lines):
         line = line.strip()
-        # Bỏ qua các dòng metadata nếu có lỡ lọt vào
-        if line.startswith("#"):
-            continue
-            
-        fixed_amr = fix_amr_string(line)
+        if not line: continue
         
-        # Kiểm tra sơ bộ
-        if fixed_amr == "(a / amr-empty)" and line != "(a / amr-empty)":
-            error_count += 1
-            print(f"⚠️ Dòng {i+1} không thể sửa, thay thế bằng graph rỗng.")
-            
-        fixed_lines.append(fixed_amr)
-        
-    print(f"📊 Đã xử lý {len(lines)} dòng.")
-    print(f"🛠️ Đã sửa lỗi và lưu vào: {OUTPUT_FIXED_FILE}")
+        # Bỏ qua dòng comment #
+        if line.startswith("#"): continue
 
-    # Ghi file
-    with open(OUTPUT_FIXED_FILE, 'w', encoding='utf-8') as f_out:
-        for line in fixed_lines:
-            f_out.write(line + "\n")
+        try:
+            # Thử parse chuẩn ngay lập tức
+            g = penman.decode(line)
+            # Re-encode để chuẩn hóa format (xóa khoảng trắng thừa)
+            clean_line = penman.encode(g, indent=None)
+            clean_lines.append(clean_line)
+            
+        except Exception as e:
+            # Nếu lỗi, thử fix aggressive
+            fixed_text = aggressive_fix(line)
+            try:
+                g = penman.decode(fixed_text)
+                clean_line = penman.encode(g, indent=None)
+                clean_lines.append(clean_line)
+                # print(f"⚠️ Dòng {i+1}: Đã sửa lỗi syntax.")
+            except Exception:
+                # Vẫn lỗi -> Bỏ cuộc, điền graph rỗng
+                error_count += 1
+                print(f"❌ Dòng {i+1}: Không thể cứu chữa -> Thay bằng (a / amr-empty)")
+                # In ra lỗi để debug nếu cần
+                # print(f"   Content: {line}")
+                clean_lines.append("(a / amr-empty)")
+
+    print(f"📊 Tổng: {len(lines)} dòng. Lỗi không cứu được: {error_count}")
+    print(f"✅ Đã lưu file sạch vào: {OUTPUT_FILE}")
+    
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+        for l in clean_lines:
+            f.write(l + "\n")
 
 if __name__ == "__main__":
     main()
