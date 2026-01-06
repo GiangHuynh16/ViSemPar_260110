@@ -1,8 +1,8 @@
 # merge_stage1.py
 # Ghép câu gốc và output stage 1 để làm input cho stage 2
 input_text = "data/public_test_input.txt"
-input_concept = "evaluation_results/mtup/stage1_output_concepts.txt"
-output_merged = "evaluation_results/mtup/stage2_input.txt"
+input_concept = "evaluation_results/mtup/stage1_output_concepts_v2.txt"
+output_merged = "evaluation_results/mtup/stage2_input_v2.txt"
 
 with open(input_text, 'r') as f1, open(input_concept, 'r') as f2:
     texts = f1.readlines()
