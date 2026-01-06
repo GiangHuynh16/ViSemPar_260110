@@ -403,7 +403,7 @@ F1:        1.0000
 **Purpose:** Verify entire pipeline works
 
 ```bash
-python3 train_mtup.py --use-case quick_test --show-sample
+python train_mtup.py --use-case quick_test --show-sample
 ```
 
 **What it does:**
