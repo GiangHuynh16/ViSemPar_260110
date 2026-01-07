@@ -11,7 +11,7 @@ BASE_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 STAGE1_ADAPTER = "checkpoints/mtup/stage1_v2/final_adapter"
 STAGE2_ADAPTER = "checkpoints/mtup/stage2_v2/final_adapter"
 
-INPUT_FILE = "data/public_test" # File chứa câu input
+INPUT_FILE = "data/public_test.txt" # File chứa câu input
 TEMP_STAGE1_OUT = "evaluation_results/mtup_v2/pred_stage1_skeleton.txt"
 FINAL_RAW_OUT = "evaluation_results/mtup_v2/pred_final_raw.txt"
 
