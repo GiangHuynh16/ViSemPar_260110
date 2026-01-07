@@ -1,25 +1,23 @@
 import sys
 import re
-import argparse
 
 try:
     import penman
-    from penman.models.amr import model as amr_model
 except ImportError:
     print("❌ Lỗi: Chưa cài thư viện penman.")
     print("👉 Hãy chạy: pip install penman")
     sys.exit(1)
 
 # === CẤU HÌNH ===
-# File đang bị lỗi của bạn
+# File đầu vào (đang bị lỗi)
 INPUT_FILE = "evaluation_results/mtup/final_amr_ready_for_smatch.txt"
-# File kết quả sạch sẽ 100%
+# File đầu ra (sạch hoàn toàn)
 OUTPUT_FILE = "evaluation_results/mtup/final_amr_submittable.txt"
 
 def ensure_unique_variables(amr_string):
     """
-    Hàm này can thiệp trực tiếp vào chuỗi AMR để đổi tên các biến bị định nghĩa trùng.
-    Ví dụ: (a / boy :ARG0 (a / girl)) -> (a / boy :ARG0 (a_2 / girl))
+    Hàm này quét chuỗi AMR và đổi tên các biến bị định nghĩa lại.
+    Ví dụ: (a / person :ARG0 (a / person)) -> (a / person :ARG0 (a_2 / person))
     """
     if not amr_string or "(" not in amr_string:
         return amr_string
@@ -30,7 +28,7 @@ def ensure_unique_variables(amr_string):
     
     seen_vars = {} # Đếm số lần xuất hiện của biến định nghĩa
     
-    # Chúng ta sẽ build lại chuỗi từ đầu
+    # Xây dựng lại chuỗi từ đầu để đảm bảo thay thế đúng vị trí
     new_string = ""
     last_end = 0
     
@@ -43,7 +41,7 @@ def ensure_unique_variables(amr_string):
         
         # Xử lý tên biến
         if var_name in seen_vars:
-            # Nếu biến đã được định nghĩa trước đó -> Đổi tên
+            # Nếu biến đã được định nghĩa trước đó -> Đổi tên (a -> a_2)
             seen_vars[var_name] += 1
             new_var_name = f"{var_name}_{seen_vars[var_name]}"
         else:
@@ -56,29 +54,28 @@ def ensure_unique_variables(amr_string):
         
         last_end = end
         
-    # Thêm phần đuôi còn lại
+    # Thêm phần đuôi còn lại của chuỗi
     new_string += amr_string[last_end:]
     return new_string
 
 def aggressive_syntax_fix(text):
-    """Sửa các lỗi cú pháp cơ bản (ngoặc, dấu hai chấm)"""
+    """Sửa các lỗi cú pháp cơ bản (ngoặc, dấu hai chấm, khoảng trắng)"""
     if not text: return ""
     
     # 1. Fix lỗi khoảng trắng sau dấu : (vd: ": arg0" -> ":arg0")
     text = re.sub(r':\s+([a-zA-Z0-9-]+)', r':\1', text)
     
-    # 2. Xóa các node rác kiểu :wiki( hoặc :op1( ở cuối dòng
+    # 2. Xóa các node rác kiểu :wiki( hoặc :op1( treo lơ lửng ở cuối dòng
     text = re.sub(r':[a-z0-9-]+\s*[({]?\s*$', '', text)
 
-    # 3. Cân bằng ngoặc
+    # 3. Cân bằng ngoặc đơn
     open_c = text.count('(')
     close_c = text.count(')')
     if open_c > close_c:
         text += ')' * (open_c - close_c)
     elif close_c > open_c:
-        # Cắt bớt ngoặc đóng thừa
+        # Cắt bớt ngoặc đóng thừa ở cuối
         diff = close_c - open_c
-        # Chỉ cắt nếu nó nằm ở cuối
         if text.endswith(')' * diff):
             text = text[:-diff]
             
@@ -86,56 +83,60 @@ def aggressive_syntax_fix(text):
 
 def validate_and_repair(line, line_num):
     """
-    Cố gắng parse bằng Penman. 
-    Nếu lỗi -> Fix Syntax -> Fix Duplicate -> Parse lại.
-    Nếu vẫn lỗi -> Trả về Empty Graph.
+    Quy trình sửa lỗi 3 bước:
+    1. Parse thử.
+    2. Nếu lỗi -> Fix syntax -> Fix trùng biến -> Parse thử lại.
+    3. Nếu vẫn lỗi -> Trả về Graph rỗng (để cứu smatch khỏi crash).
     """
     line = line.strip()
     if not line or line.startswith("#"):
         return "(e / amr-empty)"
 
-    # Bước 1: Thử parse nguyên bản
+    # --- Bước 1: Thử parse nguyên bản ---
     try:
         g = penman.decode(line)
-        # Nếu parse được, encode lại để chuẩn hóa format
-        return penman.encode(g, indent=None)
+        return penman.encode(g, indent=None) # Encode lại để chuẩn hóa
     except Exception:
-        pass # Lỗi thì đi tiếp xuống dưới
+        pass # Lỗi thì đi tiếp
 
-    # Bước 2: Fix cú pháp + Fix trùng biến
+    # --- Bước 2: Fix cú pháp + Fix trùng biến (QUAN TRỌNG) ---
     fixed_line = aggressive_syntax_fix(line)
     fixed_line = ensure_unique_variables(fixed_line)
     
-    # Bước 3: Thử parse lại
+    # --- Bước 3: Thử parse lại lần nữa ---
     try:
         g = penman.decode(fixed_line)
         return penman.encode(g, indent=None)
     except Exception as e:
-        # Bước 4: Vẫn lỗi -> Bỏ cuộc, trả về rỗng để cứu chương trình
-        print(f"⚠️ Dòng {line_num}: Không thể parse AMR (Lỗi: {str(e)[:50]}...). Thay thế bằng graph rỗng.")
+        # --- Bước 4: Vẫn lỗi -> Bỏ cuộc, trả về rỗng ---
+        print(f"⚠️ Dòng {line_num} lỗi quá nặng (Duplicate/Structure). Thay thế bằng graph rỗng.")
         return "(e / amr-empty)"
 
 def main():
-    print(f"🚀 Bắt đầu quá trình sửa lỗi AMR toàn diện...")
+    print(f"🚀 Bắt đầu sửa lỗi AMR Robust...")
     print(f"📂 Input: {INPUT_FILE}")
     
-    with open(INPUT_FILE, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+    try:
+        with open(INPUT_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        print(f"❌ Không tìm thấy file {INPUT_FILE}")
+        return
         
     clean_lines = []
     
     for i, line in enumerate(lines):
+        # Validate từng dòng một
         clean_line = validate_and_repair(line, i+1)
         clean_lines.append(clean_line)
         
-    # Ghi file
+    # Ghi file kết quả
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f_out:
         for line in clean_lines:
             f_out.write(line + "\n")
             
     print(f"✅ Đã xử lý xong {len(lines)} dòng.")
-    print(f"💾 Kết quả lưu tại: {OUTPUT_FILE}")
-    print("👉 Bây giờ bạn có thể chạy smatch mà không lo bị crash nữa!")
+    print(f"💾 File sạch 100% để chạy smatch: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
