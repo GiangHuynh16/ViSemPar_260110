@@ -255,12 +255,22 @@ def train(args):
 
     # 4. Load Model (No Quantization)
     print(f"📥 Loading model: {args.model_name}")
+
+    # Try to use Flash Attention 2 if available, otherwise fall back to SDPA
+    try:
+        import flash_attn
+        attn_impl = "flash_attention_2" if torch.cuda.get_device_capability()[0] >= 8 else "sdpa"
+        print(f"   Using attention implementation: {attn_impl}")
+    except ImportError:
+        attn_impl = "sdpa"
+        print(f"   Flash Attention not installed, using SDPA (still fast!)")
+
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=True,
-        attn_implementation="flash_attention_2" if torch.cuda.get_device_capability()[0] >= 8 else "sdpa"
+        attn_implementation=attn_impl
     )
 
     # 5. LoRA Configuration
