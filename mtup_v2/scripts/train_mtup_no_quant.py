@@ -273,7 +273,11 @@ def train(args):
         attn_implementation=attn_impl
     )
 
-    # 5. LoRA Configuration
+    # 5. Enable gradient checkpointing BEFORE applying LoRA
+    print("🔧 Enabling gradient checkpointing...")
+    model.gradient_checkpointing_enable()
+
+    # 6. LoRA Configuration
     print("🔧 Configuring LoRA adapters...")
     peft_config = LoraConfig(
         lora_alpha=16,
@@ -285,11 +289,17 @@ def train(args):
     )
 
     model = get_peft_model(model, peft_config)
+
+    # Make sure LoRA parameters require grad
+    for name, param in model.named_parameters():
+        if 'lora' in name.lower():
+            param.requires_grad = True
+
     print("\n📊 Trainable Parameters:")
     model.print_trainable_parameters()
     print()
 
-    # 6. Tokenization & Masking
+    # 7. Tokenization & Masking
     print("🔄 Tokenizing and masking inputs...")
     tokenized_dataset = raw_dataset.map(
         lambda batch: tokenize_with_masking(batch, tokenizer),
@@ -298,7 +308,7 @@ def train(args):
         desc="Tokenizing"
     )
 
-    # 7. Training Arguments
+    # 8. Training Arguments
     print("⚙️  Setting up training arguments...")
     training_args = TrainingArguments(
         output_dir=args.output_dir,
@@ -315,10 +325,11 @@ def train(args):
         report_to="none",
         warmup_ratio=0.03,
         group_by_length=True,
-        gradient_checkpointing=True,
+        gradient_checkpointing=False,  # Already enabled on model directly
+        gradient_checkpointing_kwargs={"use_reentrant": False},
     )
 
-    # 8. Data Collator
+    # 9. Data Collator
     data_collator = DataCollatorForSeq2Seq(
         tokenizer,
         pad_to_multiple_of=8,
@@ -326,7 +337,7 @@ def train(args):
         padding=True
     )
 
-    # 9. Trainer
+    # 10. Trainer
     print("🏗️  Creating Trainer...")
     trainer = Trainer(
         model=model,
