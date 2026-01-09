@@ -1,0 +1,369 @@
+#!/usr/bin/env python3
+"""
+MTUP v2 - Multi-Task Unified Prompting Training Script
+
+Single model training with unified prompt for both tasks:
+- Task 1: Sentence → AMR Skeleton (no variables)
+- Task 2: Sentence → Full AMR (with variables, PENMAN format)
+
+Usage:
+    python mtup_v2/scripts/train_mtup_unified.py \
+        --data_path data/train_mtup_unified.txt \
+        --model_name Qwen/Qwen2.5-7B-Instruct \
+        --output_dir outputs/mtup_v2_unified \
+        --epochs 5
+"""
+
+import os
+import argparse
+import torch
+import gc
+import re
+from pathlib import Path
+from datasets import Dataset
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TrainingArguments,
+    Trainer,
+    DataCollatorForSeq2Seq,
+    BitsAndBytesConfig
+)
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+
+
+def print_banner():
+    """Print training banner"""
+    banner = """
+    ╔══════════════════════════════════════════════════════════════╗
+    ║                                                              ║
+    ║     MTUP v2 - Multi-Task Unified Prompting Training         ║
+    ║                                                              ║
+    ║  🎯 Single Model, Unified Prompt, Two Tasks                 ║
+    ║  📊 Task 1: AMR Skeleton (no variables)                     ║
+    ║  📊 Task 2: Full AMR (with variables)                       ║
+    ║                                                              ║
+    ║              Vietnamese AMR Parsing - VLSP 2025             ║
+    ║                                                              ║
+    ╚══════════════════════════════════════════════════════════════╝
+    """
+    print(banner)
+    print(f"⚡ Device: {'CUDA' if torch.cuda.is_available() else 'CPU'}")
+    if torch.cuda.is_available():
+        print(f"🎮 GPU: {torch.cuda.get_device_name(0)}")
+        print(f"💾 GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+    print("=" * 70)
+
+
+def load_and_validate_dataset(file_path):
+    """
+    Load unified MTUP dataset from file.
+
+    Expected format per sample:
+    <|im_start|>system
+    ...
+    <|im_end|>
+    <|im_start|>user
+    Câu: {sentence}
+    <|im_end|>
+    <|im_start|>assistant
+    Task 1: {no_var_amr}
+    Task 2: {with_var_amr}
+    <|im_end|>
+
+    Samples are separated by double newlines.
+    """
+    print(f"📂 Reading file: {file_path}")
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Cannot find: {file_path}")
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Split by double newlines to get individual samples
+    blocks = [b.strip() for b in content.split('\n\n') if b.strip()]
+
+    valid_data = []
+    errors = 0
+
+    print("🔍 Validating data format...")
+
+    for idx, block in enumerate(blocks):
+        # Basic validation: check if it contains required markers
+        if '<|im_start|>system' not in block:
+            errors += 1
+            continue
+
+        if '<|im_start|>user' not in block:
+            errors += 1
+            continue
+
+        if '<|im_start|>assistant' not in block:
+            errors += 1
+            continue
+
+        if 'Task 1:' not in block or 'Task 2:' not in block:
+            errors += 1
+            print(f"  ⚠️  Sample {idx}: Missing Task 1 or Task 2")
+            continue
+
+        # Validate bracket balance in assistant output
+        assistant_part = block.split('<|im_start|>assistant')[-1].split('<|im_end|>')[0]
+
+        task1_match = re.search(r'Task 1:\s*(.+?)(?:\n|$)', assistant_part)
+        task2_match = re.search(r'Task 2:\s*(.+?)(?:\n|$)', assistant_part)
+
+        if not task1_match or not task2_match:
+            errors += 1
+            print(f"  ⚠️  Sample {idx}: Cannot extract Task outputs")
+            continue
+
+        task1_amr = task1_match.group(1).strip()
+        task2_amr = task2_match.group(1).strip()
+
+        # Check bracket balance
+        if task1_amr.count('(') != task1_amr.count(')'):
+            errors += 1
+            print(f"  ⚠️  Sample {idx}: Task 1 unbalanced brackets")
+            continue
+
+        if task2_amr.count('(') != task2_amr.count(')'):
+            errors += 1
+            print(f"  ⚠️  Sample {idx}: Task 2 unbalanced brackets")
+            continue
+
+        valid_data.append(block)
+
+    print(f"✅ Dataset: {len(blocks)} raw → {len(valid_data)} valid samples")
+
+    if errors > 0:
+        print(f"⚠️  Skipped {errors} invalid samples")
+
+    if not valid_data:
+        raise ValueError("❌ DATASET IS EMPTY OR FORMAT WRONG!")
+
+    return Dataset.from_dict({"text": valid_data})
+
+
+def tokenize_with_masking(batch, tokenizer):
+    """
+    Tokenize and mask prompts so loss is only computed on assistant outputs.
+
+    This is CRITICAL for instruction tuning:
+    - Labels for user prompt part = -100 (ignored in loss)
+    - Labels for assistant output = actual token IDs (used in loss)
+    """
+    tokenized_inputs = tokenizer(
+        batch['text'],
+        truncation=True,
+        max_length=2048,  # Increase for longer AMRs
+        padding=False
+    )
+
+    input_ids_list = tokenized_inputs["input_ids"]
+    attention_mask_list = tokenized_inputs["attention_mask"]
+    labels_list = []
+
+    for input_ids, text in zip(input_ids_list, batch['text']):
+        # Find where assistant response starts
+        split_text = text.split("<|im_start|>assistant\n")
+
+        if len(split_text) < 2:
+            # Invalid format, mask everything
+            labels_list.append([-100] * len(input_ids))
+            continue
+
+        # Tokenize just the prompt part (up to and including "<|im_start|>assistant\n")
+        prompt_part = split_text[0] + "<|im_start|>assistant\n"
+        prompt_ids = tokenizer(
+            prompt_part,
+            truncation=True,
+            max_length=2048,
+            add_special_tokens=False
+        )["input_ids"]
+
+        prompt_len = len(prompt_ids)
+
+        # Create labels: start with copy of input_ids
+        labels = list(input_ids)
+
+        # Mask prompt part (set to -100)
+        for i in range(min(prompt_len, len(labels))):
+            labels[i] = -100
+
+        labels_list.append(labels)
+
+    return {
+        "input_ids": input_ids_list,
+        "attention_mask": attention_mask_list,
+        "labels": labels_list
+    }
+
+
+def train(args):
+    """Main training function"""
+    print_banner()
+
+    print(f"\n🚀 STARTING MTUP v2 UNIFIED TRAINING")
+    print("=" * 70)
+
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    # 1. Load Dataset
+    raw_dataset = load_and_validate_dataset(args.data_path)
+    print(f"✅ Loaded {len(raw_dataset)} training samples\n")
+
+    # 2. Model Configuration (4-bit QLoRA)
+    print("🔧 Configuring model with 4-bit quantization...")
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16
+    )
+
+    # 3. Load Tokenizer
+    print(f"📥 Loading tokenizer: {args.model_name}")
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
+
+    # 4. Load Model
+    print(f"📥 Loading model: {args.model_name}")
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_name,
+        quantization_config=bnb_config,
+        device_map="auto",
+        attn_implementation="flash_attention_2" if torch.cuda.get_device_capability()[0] >= 8 else "sdpa"
+    )
+
+    print("🔧 Preparing model for k-bit training...")
+    model = prepare_model_for_kbit_training(model)
+
+    # 5. LoRA Configuration
+    print("🔧 Configuring LoRA adapters...")
+    peft_config = LoraConfig(
+        lora_alpha=16,
+        lora_dropout=0.05,
+        r=64,  # Higher rank for better learning
+        bias="none",
+        task_type="CAUSAL_LM",
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    )
+
+    model = get_peft_model(model, peft_config)
+    print("\n📊 Trainable Parameters:")
+    model.print_trainable_parameters()
+    print()
+
+    # 6. Tokenization & Masking
+    print("🔄 Tokenizing and masking inputs...")
+    tokenized_dataset = raw_dataset.map(
+        lambda batch: tokenize_with_masking(batch, tokenizer),
+        batched=True,
+        remove_columns=["text"],
+        desc="Tokenizing"
+    )
+
+    # 7. Training Arguments
+    print("⚙️  Setting up training arguments...")
+    training_args = TrainingArguments(
+        output_dir=args.output_dir,
+        num_train_epochs=args.epochs,
+        per_device_train_batch_size=2,
+        gradient_accumulation_steps=16,  # Effective batch = 32
+        learning_rate=1e-4,
+        weight_decay=0.01,
+        bf16=True,
+        logging_steps=10,
+        save_strategy="epoch",
+        save_total_limit=2,  # Keep only last 2 checkpoints
+        optim="paged_adamw_32bit",
+        report_to="none",
+        warmup_ratio=0.03,
+        group_by_length=True,
+        gradient_checkpointing=True,  # Save memory
+    )
+
+    # 8. Data Collator
+    data_collator = DataCollatorForSeq2Seq(
+        tokenizer,
+        pad_to_multiple_of=8,
+        return_tensors="pt",
+        padding=True
+    )
+
+    # 9. Trainer
+    print("🏗️  Creating Trainer...")
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_dataset,
+        data_collator=data_collator
+    )
+
+    # 10. Train!
+    print("\n" + "=" * 70)
+    print("🔥 TRAINING STARTED")
+    print("=" * 70 + "\n")
+
+    trainer.train()
+
+    # 11. Save
+    print("\n💾 Saving final model...")
+    final_adapter_path = os.path.join(args.output_dir, "final_adapter")
+    trainer.model.save_pretrained(final_adapter_path)
+    tokenizer.save_pretrained(final_adapter_path)
+
+    print("\n" + "=" * 70)
+    print("✅ TRAINING COMPLETED SUCCESSFULLY")
+    print("=" * 70)
+    print(f"📁 Model saved to: {final_adapter_path}")
+    print("\nNext steps:")
+    print("  1. Run prediction: python mtup_v2/scripts/predict_mtup_unified.py")
+    print("  2. Evaluate results: python mtup_v2/scripts/evaluate.py")
+    print("=" * 70)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="MTUP v2 Unified Training")
+
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        required=True,
+        help="Path to train_mtup_unified.txt"
+    )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default="Qwen/Qwen2.5-7B-Instruct",
+        help="Base model name or path"
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        required=True,
+        help="Output directory for checkpoints and final model"
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=5,
+        help="Number of training epochs"
+    )
+
+    args = parser.parse_args()
+
+    # Validate paths
+    if not os.path.exists(args.data_path):
+        print(f"❌ Error: Data file not found: {args.data_path}")
+        exit(1)
+
+    # Create output directory
+    os.makedirs(args.output_dir, exist_ok=True)
+
+    # Start training
+    train(args)

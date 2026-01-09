@@ -1,209 +1,254 @@
-# Vietnamese AMR Parser - MTUP Approach
+# Vietnamese AMR Parser - MTUP v2
 
-Vietnamese Abstract Meaning Representation (AMR) Parser using Multi-Task Unified Prompt (MTUP) with Qwen 2.5 3B + LoRA.
+Multi-Task Unified Prompting approach for Vietnamese Abstract Meaning Representation (AMR) parsing.
 
-## 🎯 Quick Start
+## 🎯 Goal
 
-### Run Full Evaluation
+Beat baseline F1 score (0.47) using a unified multi-task learning approach.
 
+## 📚 Quick Links
+
+- **START HERE:** [MTUP_V2_QUICKSTART.md](MTUP_V2_QUICKSTART.md) - Quick start guide
+- **FULL GUIDE:** [mtup_v2/docs/TRAINING_GUIDE.md](mtup_v2/docs/TRAINING_GUIDE.md) - Complete training guide
+- **CONCEPT:** [mtup_v2/docs/MTUP_CONCEPT.md](mtup_v2/docs/MTUP_CONCEPT.md) - Understanding MTUP
+- **EXAMPLES:** [mtup_v2/docs/COREFERENCE_EXAMPLES.md](mtup_v2/docs/COREFERENCE_EXAMPLES.md) - Co-reference handling
+- **SUMMARY:** [MTUP_V2_SUMMARY.md](MTUP_V2_SUMMARY.md) - Implementation summary
+- **SERVER SETUP:** [COPY_TO_SERVER.md](COPY_TO_SERVER.md) - Copy files to server
+
+## 🚀 Quick Start
+
+### 1. Preprocessing (Local)
 ```bash
-cd ~/ViSemPar_new1
-git pull origin main
-bash RUN_FULL_EVALUATION_TMUX.sh
+python3 mtup_v2/preprocessing/create_mtup_data.py
 ```
 
-### Check Status
-
+### 2. Training (Server)
 ```bash
-bash CHECK_EVALUATION_STATUS.sh
+python3 mtup_v2/scripts/train_mtup_unified.py \
+    --data_path data/train_mtup_unified.txt \
+    --model_name Qwen/Qwen2.5-7B-Instruct \
+    --output_dir outputs/mtup_v2 \
+    --epochs 5
 ```
 
-## 📊 Current Results
+### 3. Prediction (Server)
+```bash
+python3 mtup_v2/scripts/predict_mtup_unified.py \
+    --base_model Qwen/Qwen2.5-7B-Instruct \
+    --adapter_path outputs/mtup_v2/final_adapter \
+    --input_file data/public_test.txt \
+    --output_file outputs/predictions.txt
+```
 
-**Quick Test (10 samples)**:
-- F1 Score: **0.4933** (~49%)
-- Precision: 0.4978
-- Recall: 0.5002
-- Success Rate: 7/10 (70%)
+### 4. Evaluation
+```bash
+python3 mtup_v2/scripts/evaluate.py \
+    --predictions outputs/predictions.txt \
+    --ground_truth data/public_test_ground_truth.txt
+```
 
-## 📁 Project Structure
+## 📂 Project Structure
 
 ```
 ViSemPar_new1/
-├── config/
-│   └── prompt_templates.py          # MTUP Vietnamese templates
-├── src/
-│   ├── data_loader.py               # AMR data loading
-│   ├── preprocessor_mtup.py         # MTUP preprocessing
-│   └── train_mtup.py                # Training script
+├── mtup_v2/                          # NEW: MTUP v2 implementation
+│   ├── scripts/
+│   │   ├── train_mtup_unified.py     # Training script (369 lines)
+│   │   ├── predict_mtup_unified.py   # Prediction script (340 lines)
+│   │   └── evaluate.py               # Evaluation script (314 lines)
+│   ├── preprocessing/
+│   │   └── create_mtup_data.py       # Data preprocessing (241 lines)
+│   └── docs/
+│       ├── README.md                 # Overview
+│       ├── MTUP_CONCEPT.md           # Concept explanation
+│       ├── TRAINING_GUIDE.md         # Detailed guide
+│       └── COREFERENCE_EXAMPLES.md   # Co-reference examples
+│
+├── archive/
+│   └── mtup_v1/                      # OLD: Archived previous attempts
+│       ├── train_mtup*.py            # Old training scripts
+│       └── *.md                      # Old documentation (92 files)
+│
 ├── data/
-│   ├── train_amr_*.txt              # Training data
-│   └── public_test_ground_truth.txt # Test data
-├── outputs/
-│   ├── checkpoints_mtup/            # Model checkpoints
-│   └── evaluation_results_*.json   # Evaluation results
+│   ├── train_mtup_unified.txt        # ✅ Generated: 1,262 samples
+│   ├── public_test.txt               # Test input
+│   └── public_test_ground_truth.txt  # Ground truth
 │
-├── evaluate_mtup_model.py           # Evaluation script
-├── RUN_FULL_EVALUATION_TMUX.sh      # Run evaluation in tmux
-├── CHECK_EVALUATION_STATUS.sh       # Monitor progress
+├── outputs/                          # Training outputs (created during training)
 │
-└── Documentation:
-    ├── EVALUATION_SUMMARY.md        # Complete summary
-    ├── EVALUATION_QUICK_REFERENCE.md # Quick commands
-    ├── HOW_TO_RUN_FULL_EVALUATION.md # Detailed guide
-    └── EVALUATION_FIX.md            # Technical analysis
+├── MTUP_V2_QUICKSTART.md            # ⭐ START HERE
+├── MTUP_V2_SUMMARY.md               # Implementation summary
+├── COPY_TO_SERVER.md                # Server setup guide
+└── README.md                        # This file
 ```
 
-## 🚀 Features
+## 🔑 Key Concepts
 
-- **MTUP Approach**: Two-task learning (structure → variables)
-- **LoRA Training**: Efficient fine-tuning (7.08M trainable params)
-- **Vietnamese Prompts**: Native language instruction templates
-- **Full Pipeline**: Data loading → Training → Evaluation
-- **Tmux Support**: Run long evaluations safely
+### What is MTUP?
 
-## 📖 Documentation
+**MTUP** = **Multi-Task Unified Prompting**
 
-| Document | Purpose |
-|----------|---------|
-| [EVALUATION_SUMMARY.md](EVALUATION_SUMMARY.md) | Overall status and results |
-| [EVALUATION_QUICK_REFERENCE.md](EVALUATION_QUICK_REFERENCE.md) | Quick commands |
-| [HOW_TO_RUN_FULL_EVALUATION.md](HOW_TO_RUN_FULL_EVALUATION.md) | Step-by-step guide |
-| [EVALUATION_FIX.md](EVALUATION_FIX.md) | Root cause analysis |
+- **1 MODEL** (not 2!)
+- **1 PROMPT** (unified for both tasks)
+- **2 TASKS** learned simultaneously:
+  - Task 1: Vietnamese → AMR Skeleton (no variables)
+  - Task 2: Vietnamese → Full AMR (with variables, PENMAN format)
 
-## 🎓 MTUP Format
+### Why MTUP?
 
-### Training Template (v2_natural)
+| Aspect | Pipeline (❌ Wrong) | MTUP (✅ Correct) |
+|--------|-------------------|------------------|
+| Models | 2 separate models | 1 unified model |
+| Training | 2 training runs | 1 training run |
+| Knowledge | Isolated | Shared learning |
+| Efficiency | Lower | Higher |
+| F1 Score | Baseline | Target: Better |
 
+## 📊 Data Statistics
+
+- **Training samples:** 1,262 (validated)
+- **Data size:** 1.5 MB
+- **Format:** Unified prompt with both tasks
+- **Quality:** All samples validated for bracket balance
+
+## ⚙️ Technical Details
+
+### Model Configuration
+- **Base Model:** Qwen/Qwen2.5-7B-Instruct
+- **Method:** 4-bit QLoRA
+- **LoRA Rank:** 64
+- **Batch Size:** 2 (effective: 32 with gradient accumulation)
+- **Learning Rate:** 1e-4
+- **Epochs:** 5 (default)
+
+### Hardware Requirements
+- **GPU:** ≥24GB VRAM (RTX 3090/4090, A100)
+- **RAM:** ≥32GB
+- **Disk:** ≥50GB free
+- **Training Time:** ~2-3 hours (5 epochs on RTX 4090)
+
+## 🎓 Co-reference Handling
+
+Critical for high F1 score!
+
+### Rules:
+1. **Define once:** `(t / tôi)` - First occurrence
+2. **Reuse:** `t` - Subsequent occurrences (NOT `(t / tôi)` again!)
+3. **Pronouns:** Must reference correct entity
+
+### Example:
 ```
-### NHIỆM VỤ: Chuyển đổi câu tiếng Việt sang AMR (2 bước)
+Câu: Tôi là bác sĩ. Tôi làm ở bệnh viện.
 
-### Câu cần phân tích:
-{sentence}
+✅ CORRECT:
+(a / and
+    :op1(b / bác_sĩ :domain(t / tôi))
+    :op2(l / làm :ARG0 t :location(b2 / bệnh_viện)))
+                    ↑
+                    Reuse variable 't'
 
-### Kết quả phân tích:
-
-## Bước 1 - Tạo cấu trúc AMR (chưa có biến):
-{amr_without_variables}
-
-## Bước 2 - Gán biến cho các khái niệm:
-AMR hoàn chỉnh:
-{amr_with_variables}
+❌ WRONG:
+:op2(l / làm :ARG0(t / tôi) ...)  ← Duplicate definition!
 ```
 
-### Example
+See [COREFERENCE_EXAMPLES.md](mtup_v2/docs/COREFERENCE_EXAMPLES.md) for more details.
 
-**Input**: "Tôi ăn cơm"
+## 📈 Expected Results
 
-**Step 1** (structure): `(ăn :agent (tôi) :patient (cơm))`
+### Success Criteria:
+- ✅ F1 > 0.47 (beat baseline)
+- ✅ Valid PENMAN format
+- ✅ Correct co-reference handling
+- ✅ Balanced brackets
 
-**Step 2** (with vars): `(a / ăn :agent (t / tôi) :patient (c / cơm))`
+### Target Performance:
+| Metric | Baseline | Target | Stretch |
+|--------|----------|--------|---------|
+| F1 Score | 0.47 | >0.47 | >0.50 |
+| Improvement | - | +2% | +6% |
 
-## 🔧 Model Details
+## 🛠️ Troubleshooting
 
-- **Base Model**: Qwen/Qwen2.5-3B-Instruct
-- **Training Method**: LoRA (Low-Rank Adaptation)
-- **Trainable Params**: 7,077,888 (0.25% of total)
-- **Template**: v2_natural (Vietnamese)
-- **Checkpoint**: `outputs/checkpoints_mtup/mtup_full_training_final`
+### Common Issues:
 
-## 📈 Performance
+**1. Out of Memory (OOM)**
+```python
+# Edit train_mtup_unified.py
+per_device_train_batch_size=1  # Reduce from 2
+gradient_accumulation_steps=32  # Increase from 16
+```
 
-### Expected F1 Scores
-
-| Range | Assessment |
-|-------|------------|
-| > 0.60 | Excellent |
-| 0.50-0.60 | Good |
-| 0.40-0.50 | Acceptable |
-| < 0.40 | Needs improvement |
-
-**Current**: 0.49 (Acceptable, based on 10-sample test)
-
-### Comparison
-
-- English SOTA: 0.80-0.85
-- Vietnamese (limited data): 0.40-0.60 expected
-- **Our model**: 0.49 ✅
-
-## 🛠️ Usage
-
-### Training
-
+**2. No variables in predictions**
 ```bash
-bash RUN_FULL_TRAINING.sh
+# Model needs more training
+--epochs 10  # Increase from 5
 ```
 
-### Evaluation
-
+**3. Duplicate node errors**
 ```bash
-# Quick test (10 samples)
-python3 evaluate_mtup_model.py \
-  --checkpoint outputs/checkpoints_mtup/mtup_full_training_final \
-  --test-file data/public_test_ground_truth.txt \
-  --max-samples 10
-
-# Full evaluation (all samples, in tmux)
-bash RUN_FULL_EVALUATION_TMUX.sh
+# Model hasn't learned co-reference well
+# Check training data has co-reference examples
+grep -A 5 "multi-sentence" data/train_mtup_unified.txt
 ```
 
-### Monitoring
+See [TRAINING_GUIDE.md](mtup_v2/docs/TRAINING_GUIDE.md) for more solutions.
 
+## 📝 Files to Copy to Server
+
+Essential files:
 ```bash
-# Check evaluation status
-bash CHECK_EVALUATION_STATUS.sh
+# Option 1: Copy directory
+scp -r mtup_v2/ user@server:/path/to/ViSemPar_new1/
+scp data/train_mtup_unified.txt user@server:/path/to/ViSemPar_new1/data/
 
-# Attach to tmux session
-tmux attach -t mtup_eval
-
-# View log
-tail -f outputs/evaluation_full_*.log
+# Option 2: Create tarball
+tar -czf mtup_v2.tar.gz mtup_v2/ data/train_mtup_unified.txt
+scp mtup_v2.tar.gz user@server:/path/to/ViSemPar_new1/
 ```
 
-## 🔍 Known Issues
+See [COPY_TO_SERVER.md](COPY_TO_SERVER.md) for detailed instructions.
 
-1. **Duplicate node names** (2/10 samples)
-   - Model sometimes reuses variable names
-   - Can be fixed with post-processing
+## 🔬 Evaluation
 
-2. **Unmatched parentheses** (1/10 samples)
-   - Occasional generation cutoff
-   - Rare occurrence
+The model generates predictions in PENMAN format, which are evaluated against ground truth using SMATCH metric:
 
-## 💡 Future Improvements
+- **Precision:** Correct triples / Predicted triples
+- **Recall:** Correct triples / Gold triples
+- **F1:** Harmonic mean of precision and recall
 
-1. **Post-processing**: Fix duplicate nodes automatically
-2. **More training**: Increase epochs for better F1
-3. **Better templates**: Try v5_cot (Chain-of-Thought)
-4. **Hyperparameter tuning**: Optimize learning rate, batch size
+## 📚 Documentation
 
-## 📝 Citation
+### Essential Reading (in order):
+1. [MTUP_V2_QUICKSTART.md](MTUP_V2_QUICKSTART.md) - Start here!
+2. [mtup_v2/docs/MTUP_CONCEPT.md](mtup_v2/docs/MTUP_CONCEPT.md) - Understand the approach
+3. [mtup_v2/docs/TRAINING_GUIDE.md](mtup_v2/docs/TRAINING_GUIDE.md) - Step-by-step guide
+4. [mtup_v2/docs/COREFERENCE_EXAMPLES.md](mtup_v2/docs/COREFERENCE_EXAMPLES.md) - Critical for quality
 
-If you use this code, please cite:
+### Reference:
+- [MTUP_V2_SUMMARY.md](MTUP_V2_SUMMARY.md) - Implementation details
+- [COPY_TO_SERVER.md](COPY_TO_SERVER.md) - Server setup
 
-```
-Vietnamese AMR Parser with MTUP
-Model: Qwen 2.5 3B + LoRA
-Training: Multi-Task Unified Prompt approach
-```
+## 🎯 Next Steps
 
-## 📄 License
+1. ✅ Read [MTUP_V2_QUICKSTART.md](MTUP_V2_QUICKSTART.md)
+2. ✅ Run preprocessing locally
+3. ✅ Copy files to server (see [COPY_TO_SERVER.md](COPY_TO_SERVER.md))
+4. ✅ Train on server
+5. ✅ Evaluate results
+6. 🎉 Beat baseline F1!
 
-See LICENSE file.
+## 📊 Version History
 
-## 🤝 Contributing
+- **v2.0** (2026-01-10): Complete rewrite with unified MTUP approach
+- **v1.x** (archived): Two-stage pipeline approach (incorrect MTUP)
 
-Pull requests welcome! Please:
-1. Test your changes
-2. Update documentation
-3. Follow existing code style
+## 🏆 Goal
 
-## 📧 Contact
-
-For questions or issues, open a GitHub issue.
+**Beat Baseline F1: 0.47 → Target: >0.47 → Stretch: >0.50**
 
 ---
 
-**Last Updated**: 2025-12-25
-**Status**: ✅ Ready for full evaluation
-**F1 Score**: 0.49 (quick test)
+**Status:** ✅ Ready for Training
+**Last Updated:** 2026-01-10
+**Author:** Vietnamese AMR Parsing Team
+**Competition:** VLSP 2025 - AMR Parsing
