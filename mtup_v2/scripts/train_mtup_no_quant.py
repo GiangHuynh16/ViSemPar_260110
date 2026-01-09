@@ -78,8 +78,15 @@ def load_and_validate_dataset(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Split by double newlines to get individual samples
-    blocks = content.strip().split('\n\n')
+    # Split by pattern: <|im_end|>\n\n<|im_start|>
+    # This splits samples but keeps the structure intact
+    import re
+
+    # Split on double newline between samples (after <|im_end|> before next <|im_start|>system)
+    blocks = re.split(r'<\|im_end\|>\n\n(?=<\|im_start\|>system)', content.strip())
+
+    # Add back the closing tag to all but the last block
+    blocks = [b + '<|im_end|>' if not b.endswith('<|im_end|>') else b for b in blocks]
 
     # Filter empty blocks
     blocks = [b.strip() for b in blocks if b.strip()]
