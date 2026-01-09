@@ -246,7 +246,10 @@ def train(args):
 
     # 3. Load Tokenizer
     print(f"📥 Loading tokenizer: {args.model_name}")
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model_name,
+        trust_remote_code=True
+    )
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
@@ -256,6 +259,7 @@ def train(args):
         args.model_name,
         torch_dtype=torch.bfloat16,
         device_map="auto",
+        trust_remote_code=True,
         attn_implementation="flash_attention_2" if torch.cuda.get_device_capability()[0] >= 8 else "sdpa"
     )
 
