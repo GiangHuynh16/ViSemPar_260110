@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """
-Create MTUP Unified Training Data
+Create MTUP Unified Training Data from train_amr_12.txt
 
-Merge Stage 1 and Stage 2 data into a single unified format for multi-task learning.
-Input: train_amr_mtup_preprocessed.txt
-Output: train_mtup_unified.txt
+Input: train_amr_12.txt (Full AMR with variables)
+Output: train_mtup_unified.txt (Unified prompt with Task 1 and Task 2)
 
-Format:
-#::snt <sentence>
-#::task1 <AMR no variables>
-#::task2 <AMR with variables>
+Task 1: Remove variables from AMR (create skeleton)
+Task 2: Keep original AMR (with variables)
 """
 
 import os
@@ -17,15 +14,16 @@ import re
 from pathlib import Path
 
 
-def parse_mtup_preprocessed(file_path):
+def parse_amr_file(file_path):
     """
-    Parse train_amr_mtup_preprocessed.txt format:
+    Parse train_amr_12.txt format:
 
     #::snt <sentence>
-    #::amr-no-vars <amr lines>
-    #::amr-with-vars <amr lines>
+    <AMR graph with variables - multiple lines>
+
+    (blank line separator)
     """
-    print(f"📂 Reading {file_path}")
+    print(f"📂 Reading: {file_path}")
 
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -40,9 +38,7 @@ def parse_mtup_preprocessed(file_path):
         lines = block.strip().split('\n')
 
         sentence = None
-        no_var_amr = []
-        with_var_amr = []
-        current_section = None
+        amr_lines = []
 
         for line in lines:
             line = line.strip()
@@ -51,64 +47,60 @@ def parse_mtup_preprocessed(file_path):
 
             if line.startswith('#::snt'):
                 sentence = line.replace('#::snt', '').strip()
-                current_section = 'snt'
-            elif line.startswith('#::amr-no-vars'):
-                current_section = 'no-vars'
-                # Check if AMR is on same line
-                rest = line.replace('#::amr-no-vars', '').strip()
-                if rest:
-                    no_var_amr.append(rest)
-            elif line.startswith('#::amr-with-vars'):
-                current_section = 'with-vars'
-                # Check if AMR is on same line
-                rest = line.replace('#::amr-with-vars', '').strip()
-                if rest:
-                    with_var_amr.append(rest)
             else:
-                # AMR content
-                if current_section == 'no-vars':
-                    no_var_amr.append(line)
-                elif current_section == 'with-vars':
-                    with_var_amr.append(line)
+                amr_lines.append(line)
 
-        # Validate and add
-        if sentence and no_var_amr and with_var_amr:
+        if sentence and amr_lines:
             # Join multi-line AMR into single line
-            no_var_str = ' '.join(no_var_amr).strip()
-            with_var_str = ' '.join(with_var_amr).strip()
-
-            # Clean up extra spaces
-            no_var_str = re.sub(r'\s+', ' ', no_var_str)
-            with_var_str = re.sub(r'\s+', ' ', with_var_str)
+            full_amr = ' '.join(amr_lines)
+            # Normalize spaces
+            full_amr = re.sub(r'\s+', ' ', full_amr)
 
             samples.append({
                 'sentence': sentence,
-                'no_var_amr': no_var_str,
-                'with_var_amr': with_var_str
+                'full_amr': full_amr.strip()
             })
-        else:
-            print(f"⚠️  Skipped incomplete block: {sentence[:50] if sentence else 'No sentence'}")
 
     print(f"✅ Parsed {len(samples)} samples")
     return samples
 
 
+def remove_variables_from_amr(amr_with_vars):
+    """
+    Remove variables from AMR to create skeleton (Task 1)
+
+    Example:
+    Input:  (b / bi_kịch :domain(c / chỗ :mod(đ / đó)))
+    Output: (bi_kịch :domain(chỗ :mod(đó)))
+
+    Rules:
+    - Remove "x / " pattern (variable definition)
+    - Keep standalone variables when they reference back
+    """
+    # Pattern to match variable definitions: (var / concept)
+    # Replace with just (concept)
+    no_vars = re.sub(r'\(([a-z0-9_]+)\s*/\s*', r'(', amr_with_vars)
+
+    # Pattern to match standalone variables that reference back
+    # These appear as arguments without definition
+    # Example: ":ARG0 t" where t was defined earlier
+    # For skeleton, we need to identify and handle these
+
+    # However, for simplicity, we keep relations and remove variable names
+    # This might need refinement based on actual requirements
+
+    return no_vars.strip()
+
+
 def create_unified_prompt(sample):
     """
     Create unified prompt for MTUP training.
-
-    Template:
-    <|im_start|>system
-    [System prompt]
-    <|im_end|>
-    <|im_start|>user
-    Câu: {sentence}
-    <|im_end|>
-    <|im_start|>assistant
-    Task 1: {no_var_amr}
-    Task 2: {with_var_amr}
-    <|im_end|>
     """
+    # Create Task 1: AMR without variables
+    task1_amr = remove_variables_from_amr(sample['full_amr'])
+
+    # Task 2: Original AMR with variables
+    task2_amr = sample['full_amr']
 
     system_prompt = """Bạn là chuyên gia phân tích AMR (Abstract Meaning Representation) cho tiếng Việt.
 Nhiệm vụ: Với mỗi câu tiếng Việt, sinh ra 2 output:
@@ -125,7 +117,7 @@ Quy tắc QUAN TRỌNG cho Task 2:
 
     user_input = f"Câu: {sample['sentence']}"
 
-    assistant_output = f"Task 1: {sample['no_var_amr']}\nTask 2: {sample['with_var_amr']}"
+    assistant_output = f"Task 1: {task1_amr}\nTask 2: {task2_amr}"
 
     prompt = f"""<|im_start|>system
 {system_prompt}<|im_end|>
@@ -157,24 +149,21 @@ def validate_samples(samples):
 
     for idx, sample in enumerate(samples):
         try:
-            # Check Task 1
-            if not sample['no_var_amr'] or len(sample['no_var_amr']) < 5:
+            # Check full AMR
+            if not sample['full_amr'] or len(sample['full_amr']) < 5:
                 errors['empty_amr'] += 1
                 continue
 
-            if not validate_amr_brackets(sample['no_var_amr']):
+            if not validate_amr_brackets(sample['full_amr']):
                 errors['unbalanced_brackets'] += 1
-                print(f"  ❌ Sample {idx}: Task 1 unbalanced brackets")
+                print(f"  ❌ Sample {idx}: Unbalanced brackets in full AMR")
                 continue
 
-            # Check Task 2
-            if not sample['with_var_amr'] or len(sample['with_var_amr']) < 5:
-                errors['empty_amr'] += 1
-                continue
-
-            if not validate_amr_brackets(sample['with_var_amr']):
+            # Create Task 1 and validate
+            task1_amr = remove_variables_from_amr(sample['full_amr'])
+            if not validate_amr_brackets(task1_amr):
                 errors['unbalanced_brackets'] += 1
-                print(f"  ❌ Sample {idx}: Task 2 unbalanced brackets")
+                print(f"  ❌ Sample {idx}: Unbalanced brackets in Task 1 AMR")
                 continue
 
             valid_samples.append(sample)
@@ -184,10 +173,11 @@ def validate_samples(samples):
             print(f"  ❌ Sample {idx}: {e}")
 
     print(f"\n✅ Valid samples: {len(valid_samples)}/{len(samples)}")
-    print(f"Errors breakdown:")
-    for error_type, count in errors.items():
-        if count > 0:
-            print(f"  - {error_type}: {count}")
+    if sum(errors.values()) > 0:
+        print(f"Errors breakdown:")
+        for error_type, count in errors.items():
+            if count > 0:
+                print(f"  - {error_type}: {count}")
 
     return valid_samples
 
@@ -199,11 +189,11 @@ def main():
     output_file = project_root / 'data' / 'train_mtup_unified.txt'
 
     print("=" * 70)
-    print("MTUP UNIFIED DATA CREATION")
+    print("MTUP UNIFIED DATA CREATION FROM train_amr_12.txt")
     print("=" * 70)
 
     # Parse input
-    samples = parse_mtup_preprocessed(input_file)
+    samples = parse_amr_file(input_file)
 
     if not samples:
         print("❌ No samples found!")
@@ -233,7 +223,7 @@ def main():
     print("EXAMPLE (first sample):")
     print("=" * 70)
     example = create_unified_prompt(valid_samples[0])
-    print(example[:500] + "..." if len(example) > 500 else example)
+    print(example)
     print("=" * 70)
 
 
