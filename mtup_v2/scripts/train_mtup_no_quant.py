@@ -311,7 +311,7 @@ def train(args):
         logging_steps=10,
         save_strategy="epoch",
         save_total_limit=2,
-        optim="paged_adamw_32bit",
+        optim="adamw_torch",  # Use standard PyTorch AdamW (no bitsandbytes needed)
         report_to="none",
         warmup_ratio=0.03,
         group_by_length=True,
