@@ -74,20 +74,35 @@ def remove_variables_from_amr(amr_with_vars):
     Output: (bi_kịch :domain(chỗ :mod(đó)))
 
     Rules:
-    - Remove "x / " pattern (variable definition)
-    - Keep standalone variables when they reference back
+    - Remove ALL "x / " patterns (variable definitions)
+    - Remove standalone variable references after relations
+
+    Algorithm:
+    1. Remove (var / concept) -> (concept)
+    2. Remove :relation var -> :relation (when var is standalone without /)
     """
-    # Pattern to match variable definitions: (var / concept)
-    # Replace with just (concept)
-    no_vars = re.sub(r'\(([a-z0-9_]+)\s*/\s*', r'(', amr_with_vars)
+    # Step 1: Remove variable definitions: (var / concept) -> (concept)
+    # Use \w to match Unicode word characters (includes Vietnamese chars)
+    no_vars = re.sub(r'\([\w]+\s*/\s*', r'(', amr_with_vars)
 
-    # Pattern to match standalone variables that reference back
-    # These appear as arguments without definition
-    # Example: ":ARG0 t" where t was defined earlier
-    # For skeleton, we need to identify and handle these
+    # Step 2: Remove standalone variable references
+    # Pattern: :relation followed by space and single-letter/number variable
+    # Example: ":ARG0 t " -> ":ARG0 "
+    # But be careful not to remove concepts like "tôi", only single vars like "t", "c", "đ"
+    # Variables are typically 1-3 chars: t, c, đ, t2, c3, etc.
 
-    # However, for simplicity, we keep relations and remove variable names
-    # This might need refinement based on actual requirements
+    # This is tricky because we need to distinguish between:
+    # - Variable reference: :ARG0 t (should remove "t")
+    # - Concept: :ARG0 tôi (should keep "tôi")
+
+    # For now, we'll use a heuristic: if it's 1-3 chars and appears after a relation, it's likely a variable
+    # But this is not perfect and may need refinement
+
+    # Actually, a better approach: if there's no "/" after the token,
+    # and it's short (<=3 chars), it's likely a variable reference
+
+    # Remove pattern like ":ARG0 x " or ":ARG0 x)" where x is 1-3 chars
+    no_vars = re.sub(r'(:[A-Z0-9-]+)\s+([a-z0-9_]{1,3})(?=[\s\)])', r'\1', no_vars)
 
     return no_vars.strip()
 
