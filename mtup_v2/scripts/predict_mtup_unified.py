@@ -18,7 +18,7 @@ import argparse
 import torch
 import re
 from pathlib import Path
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 from tqdm import tqdm
 
@@ -28,10 +28,11 @@ def print_banner():
     banner = """
     ╔══════════════════════════════════════════════════════════════╗
     ║                                                              ║
-    ║     MTUP v2 - Unified Model Prediction                      ║
+    ║     MTUP v2 - Unified Model Prediction (No Quantization)    ║
     ║                                                              ║
     ║  🎯 Extracting Task 2 (Full AMR with variables)             ║
     ║  📊 PENMAN Format Output                                    ║
+    ║  ⚡ bfloat16 - Matches training configuration               ║
     ║                                                              ║
     ╚══════════════════════════════════════════════════════════════╝
     """
@@ -39,28 +40,35 @@ def print_banner():
 
 
 def load_model(base_model_path, adapter_path):
-    """Load base model and LoRA adapter"""
+    """Load base model and LoRA adapter (bfloat16, no quantization)"""
     print(f"📥 Loading base model: {base_model_path}")
 
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16
-    )
+    # Try to use Flash Attention 2 if available, otherwise fall back to SDPA
+    try:
+        import flash_attn
+        attn_impl = "flash_attention_2" if torch.cuda.get_device_capability()[0] >= 8 else "sdpa"
+        print(f"   Using attention implementation: {attn_impl}")
+    except ImportError:
+        attn_impl = "sdpa"
+        print(f"   Flash Attention not installed, using SDPA (still fast!)")
 
+    # Load model with bfloat16 (same as training)
     model = AutoModelForCausalLM.from_pretrained(
         base_model_path,
-        quantization_config=bnb_config,
+        torch_dtype=torch.bfloat16,
         device_map="auto",
-        attn_implementation="sdpa"
+        trust_remote_code=True,
+        attn_implementation=attn_impl
     )
 
     print(f"🔗 Loading LoRA adapter: {adapter_path}")
     model = PeftModel.from_pretrained(model, adapter_path)
     model.eval()
 
-    tokenizer = AutoTokenizer.from_pretrained(base_model_path)
+    tokenizer = AutoTokenizer.from_pretrained(
+        base_model_path,
+        trust_remote_code=True
+    )
     tokenizer.pad_token = tokenizer.eos_token
 
     print("✅ Model loaded successfully\n")
