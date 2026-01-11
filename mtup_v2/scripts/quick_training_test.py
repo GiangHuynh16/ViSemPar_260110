@@ -22,68 +22,82 @@ from peft import LoraConfig, get_peft_model
 
 def create_small_test_dataset(data_path, num_samples=10):
     """Load only first N samples for quick test"""
+    import re
     print(f"📦 Loading {num_samples} samples for quick test...")
 
     with open(data_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Split by conversation blocks
-    conversations = []
-    current = []
+    # CORRECT splitting logic - same as train_mtup_no_quant.py
+    blocks = re.split(r'<\|im_end\|>\n\n(?=<\|im_start\|>system)', content.strip())
+    blocks = [b + '<|im_end|>' if not b.endswith('<|im_end|>') else b for b in blocks]
+    blocks = [b.strip() for b in blocks if b.strip()]
 
-    for line in content.split('\n'):
-        if line.startswith('<|im_start|>system') and current:
-            conversations.append('\n'.join(current))
-            current = [line]
-        else:
-            current.append(line)
-
-    if current:
-        conversations.append('\n'.join(current))
+    print(f"📊 Found {len(blocks)} total samples in dataset")
 
     # Take first N samples
-    small_dataset = conversations[:num_samples]
+    small_dataset = blocks[:num_samples]
 
     dataset = Dataset.from_dict({"text": small_dataset})
     print(f"✅ Created test dataset with {len(dataset)} samples\n")
+
+    # Debug: print first sample
+    if len(small_dataset) > 0:
+        print("🔍 First sample preview (last 200 chars):")
+        print("-" * 70)
+        print(small_dataset[0][-200:])
+        print("-" * 70 + "\n")
+
     return dataset
 
 def tokenize_with_masking(batch, tokenizer):
-    """Tokenize with input masking (same as original)"""
-    texts = batch["text"]
-
-    encodings = tokenizer(
-        texts,
+    """
+    Tokenize and mask prompts - EXACT SAME LOGIC as train_mtup_no_quant.py
+    """
+    tokenized_inputs = tokenizer(
+        batch['text'],
         truncation=True,
         max_length=2048,
-        padding=False,
-        return_tensors=None
+        padding=False
     )
 
-    input_ids_list = []
+    input_ids_list = tokenized_inputs["input_ids"]
+    attention_mask_list = tokenized_inputs["attention_mask"]
     labels_list = []
 
-    for input_ids in encodings["input_ids"]:
-        labels = input_ids.copy()
+    for input_ids, text in zip(input_ids_list, batch['text']):
+        # Find where assistant response starts
+        split_text = text.split("<|im_start|>assistant\n")
 
-        # Mask everything before last assistant response
-        assistant_token = tokenizer.encode("<|im_start|>assistant\n", add_special_tokens=False)
+        if len(split_text) < 2:
+            # Invalid format, mask everything
+            labels_list.append([-100] * len(input_ids))
+            continue
 
-        last_assistant_idx = -1
-        for i in range(len(input_ids) - len(assistant_token)):
-            if input_ids[i:i+len(assistant_token)] == assistant_token:
-                last_assistant_idx = i + len(assistant_token)
+        # Tokenize just the prompt part
+        prompt_part = split_text[0] + "<|im_start|>assistant\n"
+        prompt_ids = tokenizer(
+            prompt_part,
+            truncation=True,
+            max_length=2048,
+            add_special_tokens=False
+        )["input_ids"]
 
-        if last_assistant_idx > 0:
-            labels[:last_assistant_idx] = [-100] * last_assistant_idx
+        prompt_len = len(prompt_ids)
 
-        input_ids_list.append(input_ids)
+        # Create labels: start with copy of input_ids
+        labels = list(input_ids)
+
+        # Mask prompt part (set to -100)
+        for i in range(min(prompt_len, len(labels))):
+            labels[i] = -100
+
         labels_list.append(labels)
 
     return {
         "input_ids": input_ids_list,
-        "labels": labels_list,
-        "attention_mask": encodings["attention_mask"]
+        "attention_mask": attention_mask_list,
+        "labels": labels_list
     }
 
 def quick_test_training(args):
