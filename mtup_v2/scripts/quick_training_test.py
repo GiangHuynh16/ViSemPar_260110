@@ -104,14 +104,14 @@ def quick_test_training(args):
     """Quick training test with minimal setup"""
 
     print("=" * 70)
-    print("⚡ QUICK TRAINING TEST (10 samples, 1 epoch)")
+    print(f"⚡ QUICK TRAINING TEST ({args.num_samples} samples, {args.epochs} epochs)")
     print("=" * 70)
     print("🎯 Purpose: Verify everything works before full training")
-    print("⏱️  Expected time: 5-10 minutes")
+    print("⏱️  Expected time: varies with samples/epochs")
     print("=" * 70 + "\n")
 
     # 1. Small dataset
-    raw_dataset = create_small_test_dataset(args.data_path, num_samples=10)
+    raw_dataset = create_small_test_dataset(args.data_path, num_samples=args.num_samples)
 
     # 2. Tokenizer
     print(f"📥 Loading tokenizer...")
@@ -154,10 +154,10 @@ def quick_test_training(args):
         remove_columns=["text"]
     )
 
-    # 5. Training args (1 epoch only)
+    # 5. Training args
     training_args = TrainingArguments(
         output_dir=args.output_dir,
-        num_train_epochs=1,  # Only 1 epoch!
+        num_train_epochs=args.epochs,
         per_device_train_batch_size=1,
         gradient_accumulation_steps=4,  # Smaller for quick test
         learning_rate=3e-5,
@@ -279,6 +279,8 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--model_name", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     parser.add_argument("--output_dir", type=str, default="outputs/quick_test")
+    parser.add_argument("--num_samples", type=int, default=10, help="Number of samples for quick test")
+    parser.add_argument("--epochs", type=int, default=1, help="Number of epochs for quick test")
 
     args = parser.parse_args()
 
