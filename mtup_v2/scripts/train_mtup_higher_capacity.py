@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# 20260110 - 19:57 - task 2 fixed
+# | Parameter | Old Value | New Value | Lý do |
+# |-----------|-----------|-----------|-------|
+# | LoRA rank | 32 | 64 | More parameters to learn complex patterns |
+# | LoRA alpha | 16 | 32 | Stronger LoRA adaptation |
+# | Learning rate | 5e-5 | 3e-5 | More stable, less likely to overshoot |
+# | Epochs | 15 | 20 | More training iterations |
 """
 MTUP v2 - Higher Capacity Training Script
 
